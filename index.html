@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Марина · соцсети</title>
+<style>
+:root{
+  --bg:#eef3e3;          /* светлый фисташковый фон */
+  --card:#fbfcf7;
+  --line:#dde5cf;
+  --ink:#232a1d;
+  --ink-2:#4f5a44;
+  --muted:#7d876f;
+  --accent:#a25574;      /* сливовый акцент */
+  --accent-soft:#f1e0e7;
+  --pista:#5e8f3e;
+  --pista-soft:#e1ecd2;
+  --blue:#3f78b5;
+  --good:#2f7a36;
+  --grid:#e6ecdb;
+  --track:#e8eedd;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171b14; --card:#1f251b; --line:#2f3829; --ink:#eef2e6; --ink-2:#c3cbb7; --muted:#8f9a82;
+    --accent:#c96b95; --accent-soft:#3a2530; --pista:#6f9f4e; --pista-soft:#27331f; --blue:#5a8fd0;
+    --good:#86c47a; --grid:#2a3224; --track:#2a3224; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171b14; --card:#1f251b; --line:#2f3829; --ink:#eef2e6; --ink-2:#c3cbb7; --muted:#8f9a82;
+  --accent:#c96b95; --accent-soft:#3a2530; --pista:#6f9f4e; --pista-soft:#27331f; --blue:#5a8fd0;
+  --good:#86c47a; --grid:#2a3224; --track:#2a3224; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  padding-inline:16px; padding-block:28px 48px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.num{font-variant-numeric:tabular-nums}
+
+/* шапка */
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px;padding-bottom:4px}
+h1{margin:0;font-size:clamp(22px,3.2vw,30px);font-weight:700;letter-spacing:.04em;text-wrap:balance}
+.sub{margin-top:4px;color:var(--muted);font-size:14px}
+.sub b{color:var(--ink-2);font-weight:500}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{
+  font:inherit;font-size:14px;border:0;background:transparent;color:var(--ink-2);
+  padding:7px 14px;border-radius:999px;cursor:pointer;white-space:nowrap
+}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.btn{
+  font:inherit;font-size:14px;cursor:pointer;border-radius:999px;padding:8px 16px;
+  border:1px solid var(--accent);background:transparent;color:var(--accent);display:inline-flex;gap:8px;align-items:center
+}
+.btn:hover{background:var(--accent-soft)}
+.btn[disabled]{opacity:.6;cursor:progress}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* сетка блоков */
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px 24px;min-width:0}
+.c3{grid-column:span 3}.c4{grid-column:span 4}.c6{grid-column:span 6}.c8{grid-column:span 8}.c12{grid-column:span 12}
+.card h2{margin:0;font-size:15px;font-weight:600}
+.card .hint{color:var(--muted);font-size:13px;margin-top:2px}
+.head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:16px}
+
+/* KPI */
+.kpi .label{color:var(--muted);font-size:13px;text-transform:lowercase;letter-spacing:.02em}
+.kpi .big{font-size:clamp(30px,3.6vw,40px);font-weight:650;letter-spacing:-.01em;line-height:1.1;margin-top:8px}
+.kpi .delta{margin-top:8px;font-size:13px;color:var(--muted)}
+.kpi .delta .up{color:var(--good);font-weight:600}
+.kpi .delta .down{color:var(--muted);font-weight:600}
+.kpi .foot{margin-top:4px;font-size:12px;color:var(--muted)}
+
+/* графики */
+.charts2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.mini h3{margin:0 0 2px;font-size:13px;font-weight:500;color:var(--ink-2)}
+.mini .val{font-size:22px;font-weight:650}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--muted);font-size:11px;font-family:inherit}
+
+/* кольцо */
+.donut-wrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.donut-wrap svg{width:150px;flex:none}
+.legend{display:flex;flex-direction:column;gap:10px;flex:1;min-width:140px}
+.legend .row{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;font-size:14px}
+.sw{width:12px;height:12px;border-radius:4px}
+.legend .pct{font-weight:600}
+.legend .cnt{color:var(--muted);font-size:12px;grid-column:2/4;margin-top:-8px}
+
+/* полосы */
+.bars{display:flex;flex-direction:column;gap:16px}
+.bar-row .top{display:flex;justify-content:space-between;gap:12px;font-size:14px;margin-bottom:6px}
+.bar-row .top span:last-child{font-weight:600}
+.track{height:12px;background:var(--track);border-radius:6px;overflow:hidden}
+.fill{height:100%;border-radius:0 6px 6px 0}
+.bar-row .meta{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* воронка */
+.funnel{display:flex;flex-direction:column;gap:0}
+.f-step{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center}
+.f-name{font-size:14px;color:var(--ink-2)}
+.f-bar{height:34px;border-radius:8px;background:var(--accent);display:flex;align-items:center;padding:0 12px;
+  color:#fff;font-weight:600;font-size:14px;min-width:fit-content;white-space:nowrap}
+.f-bar.empty{background:transparent;border:1px dashed var(--line);color:var(--muted);font-weight:400}
+.f-conv{display:grid;grid-template-columns:110px 1fr;gap:12px;padding:5px 0;font-size:12px;color:var(--muted)}
+.f-conv b{color:var(--ink);font-weight:600}
+
+/* топ */
+.tops{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.post{border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.post .row1{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.pill{font-size:12px;padding:3px 10px;border-radius:999px;font-weight:600;white-space:nowrap}
+.pill.viral{background:var(--accent);color:#fff}
+.pill.strong{background:var(--accent-soft);color:var(--accent)}
+.pill.normal{background:var(--track);color:var(--ink-2)}
+.post .topic{font-size:15px;font-weight:500;line-height:1.35}
+.post .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 12px;margin-top:auto}
+.post .stats div{font-size:12px;color:var(--muted)}
+.post .stats b{display:block;font-size:17px;color:var(--ink);font-weight:600}
+
+/* план */
+.plan{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:start}
+.plan .need{font-size:clamp(40px,6vw,56px);font-weight:700;color:var(--accent);line-height:1}
+.plan .need-cap{font-size:15px;color:var(--ink-2);margin-top:6px}
+.plan .need-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.goal-in{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-2);margin-bottom:16px;flex-wrap:wrap}
+.goal-in input{font:inherit;width:96px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.calc{display:flex;flex-direction:column;gap:8px;font-size:14px}
+.calc .line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--grid);padding-bottom:8px}
+.calc .line span:first-child{color:var(--ink-2)}
+.calc .line span:last-child{font-weight:600;white-space:nowrap}
+.progress{margin-top:18px}
+.progress .track{height:10px}
+.progress .fill{background:var(--pista)}
+.progress .cap{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+
+.empty-note{color:var(--muted);font-size:14px;padding:18px 0}
+.foot-note{color:var(--muted);font-size:12px;line-height:1.5}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--card);font-size:12px;padding:6px 9px;border-radius:8px;
+  white-space:nowrap;transform:translate(-50%,-110%);z-index:10}
+
+@media (max-width:980px){
+  .c3{grid-column:span 6}.c4,.c8{grid-column:span 12}
+}
+@media (max-width:720px){
+  .c3,.c4,.c6,.c8,.c12{grid-column:span 12}
+  .charts2,.plan,.tops{grid-template-columns:1fr}
+  .card{padding:18px}
+  .f-step,.f-conv{grid-template-columns:84px 1fr}
+}
+@media (prefers-reduced-motion:no-preference){
+  .fill,.f-bar{transition:width .35s ease}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>МАРИНА, НУТРИЦИОЛОГ, ВРАЧ</h1>
+      <div class="sub">аналитика соцсетей · <b id="updated">обновлено сегодня</b></div>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Соцсеть" id="netSeg">
+        <button type="button" data-net="ig" aria-pressed="true">Инстаграм</button>
+        <button type="button" data-net="yt" aria-pressed="false">YouTube</button>
+      </div>
+      <div class="seg" role="group" aria-label="Период" id="perSeg">
+        <button type="button" data-per="week" aria-pressed="false">неделя</button>
+        <button type="button" data-per="month" aria-pressed="true">месяц</button>
+        <button type="button" data-per="all" aria-pressed="false">все время</button>
+      </div>
+      <button type="button" class="btn" id="refresh">↻ обновить</button>
+    </div>
+  </header>
+
+  <section class="grid" id="kpis" aria-label="Ключевые показатели"></section>
+
+  <section class="grid">
+    <div class="card c8">
+      <div class="head"><div><h2>Рост по неделям</h2><div class="hint" id="growthHint"></div></div></div>
+      <div class="charts2">
+        <div class="mini"><h3>подписки за неделю</h3><div class="val num" id="gSubsVal"></div><div id="gSubs"></div></div>
+        <div class="mini"><h3>охват за неделю</h3><div class="val num" id="gReachVal"></div><div id="gReach"></div></div>
+      </div>
+    </div>
+    <div class="card c4">
+      <div class="head"><div><h2>Микс контента</h2><div class="hint">доля форматов по числу публикаций</div></div></div>
+      <div id="mix"></div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card c6">
+      <div class="head"><div><h2>Сравнение форматов</h2><div class="hint">средний охват одной публикации</div></div></div>
+      <div id="formats"></div>
+    </div>
+    <div class="card c6">
+      <div class="head"><div><h2>Воронка услуги</h2><div class="hint">от охвата до продажи · ширина полос в логарифмической шкале</div></div></div>
+      <div id="funnel"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="head"><div><h2>Топ публикаций</h2><div class="hint" id="topHint"></div></div></div>
+    <div id="top"></div>
+  </section>
+
+  <section class="card">
+    <div class="head"><div><h2>Планирование</h2><div class="hint">сколько сильных публикаций нужно, чтобы выйти на цель</div></div></div>
+    <div id="plan"></div>
+  </section>
+
+  <p class="foot-note" id="notes"></p>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+/* ============ НАСТРОЙКИ ============
+   Если опубликуете таблицу («Файл → Поделиться → Опубликовать в интернете → CSV»),
+   вставьте ссылки на листы сюда. Пустая строка — берём данные прямо из таблицы по ID. */
+const CONFIG = {
+  sheetId: '1UpFsdWBm4oqh2A_XEjaO5a10mqSDcjYlKXe8R5r6qxA',
+  csv: { weekly: '', content: '', goals: '' },
+  sheetNames: { weekly: 'Еженедельная статистика', content: 'Контент', goals: 'Цели' },
+  defaultGoal: 5000
+};
+
+/* ============ ВШИТЫЕ ДАННЫЕ (снимок таблицы на 25.09.2026) ============ */
+const SNAPSHOT = {
+  date: '2026-09-25',
+  weekly: `Показатель,Неделя 1,Неделя 2,Неделя 3,Неделя 4,Неделя 5,Неделя 6,Неделя 7,Неделя 8,Неделя 9,Неделя 10,Неделя 11,Неделя 12
+ОБЩИЕ ПОКАЗАТЕЛИ
+Подписчики (всего)
+Просмотры контента
+Переходы на сайт
+Заявки / лиды
+ИНСТАГРАМ
+Подписчики
+Прирост подписчиков
+Охват
+Просмотры
+"Вовлеченность ER, %"
+ТИКТОК
+Подписчики
+Прирост подписчиков
+Охват
+Просмотры
+"Вовлеченность ER, %"
+ВКОНТАКТЕ
+Подписчики
+Прирост подписчиков
+Охват
+Просмотры
+"Вовлеченность ER, %"
+YOUTUBE
+Подписчики
+Прирост подписчиков
+Охват
+Просмотры
+"Вовлеченность ER, %"
+ТЕЛЕГРАМ
+Подписчики
+Прирост подписчиков
+Охват
+Просмотры`,
+  content: `Дата,Соцсеть,Формат,Тема публикации,Охват,Просмотры,Лайки,Комментарии,Репосты,Сохранения,Подписки с публикации,Переходы,"ER, %",Вывод
+22.06.2026,Instagram,Рилс,Вы пьете кофе непраивльно (формат доска),1 951,2354,30,4,23,7,4,6,"2,1",
+23.06.2026,Instagram,Рилс,Вы пьете кофе непраивльно (формат:стикеры),1305,1610,23,8,10,6,1,6,"2,8",
+24.06.2026,Instagram,Рилс,Ужинс состоял из... (формат стикеры),687,691,15,8,14,5,0,3,"4,1",
+25.06.2026,Instagram,Рилс,Как худеть во время сна (стикеры),822,999,18,4,13,9,7,7,"3,8",
+27.06.2026,Instagram,Рилс,Вся правда о йогуртах (рейтинг 10/10),993,1253,16,3,8,5,4,4,"2,4",
+28.06.2026,Instagram,Рилс,Фрукты при сахарном диабете (10/10),5344,5870,68,8,38,21,27,8,"1,8",
+30.06.2027,Instagram,Рилс,Вы пьете кофе непраивльно (формат доска) повтор,153485,155735,928,103,1340,438,475,143,1,`,
+  goals: `Показатель,План минимум,План максимум,Факт
+Подписчики за период,,,
+Охват,,,
+Просмотры,,,
+"Вовлеченность ER, %",,,
+Переходы на сайт,,,
+Заявки / лиды,,,`
+};
+
+/* ============ ПАРСИНГ ============ */
+function parseCSV(text){
+  const rows=[]; let row=[], cell='', q=false;
+  text=String(text).replace(/^﻿/,'');
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){
+      if(ch==='"'){ if(text[i+1]==='"'){cell+='"';i++;} else q=false; }
+      else cell+=ch;
+    }else if(ch==='"') q=true;
+    else if(ch===',') { row.push(cell); cell=''; }
+    else if(ch==='\n'||ch==='\r'){
+      if(ch==='\r'&&text[i+1]==='\n') i++;
+      row.push(cell); rows.push(row); row=[]; cell='';
+    } else cell+=ch;
+  }
+  if(cell!==''||row.length){ row.push(cell); rows.push(row); }
+  return rows.map(r=>r.map(c=>c.trim()));
+}
+function num(v){
+  if(v==null) return null;
+  const s=String(v).replace(/[\s  %]/g,'').replace(',','.');
+  if(s===''||isNaN(+s)) return null;
+  return +s;
+}
+const DAY=864e5;
+const TODAY=new Date(); TODAY.setHours(0,0,0,0);
+const fixes=[];
+function parseDate(s){
+  s=(s||'').trim(); let d=null, m;
+  if((m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})/))) d=new Date(+(m[3].length===2?'20'+m[3]:m[3]),m[2]-1,+m[1]);
+  else if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) d=new Date(+m[1],m[2]-1,+m[3]);
+  else if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) d=new Date(+m[3],m[1]-1,+m[2]);
+  if(!d||isNaN(d)) return null;
+  // дата из будущего — почти наверняка опечатка в годе
+  if(d-TODAY>7*DAY){
+    const f=new Date(d); f.setFullYear(d.getFullYear()-1);
+    if(f-TODAY<=7*DAY){ fixes.push(s+' → '+fmtDate(f)); d=f; }
+  }
+  return d;
+}
+function netOf(s){
+  s=(s||'').toLowerCase();
+  if(/insta|инста/.test(s)) return 'ig';
+  if(/you ?tube|ютуб/.test(s)) return 'yt';
+  return null; // другие сети не учитываем
+}
+function fmtOf(s){
+  s=(s||'').toLowerCase();
+  if(/рилс|reel|shorts|шортс|клип/.test(s)) return 'reels';
+  if(/stor|стори|истори/.test(s)) return 'stories';
+  return 'posts';
+}
+function parseContent(text){
+  const rows=parseCSV(text); if(!rows.length) return [];
+  const h=rows[0].map(x=>x.toLowerCase());
+  const col=k=>h.findIndex(x=>x.includes(k));
+  const I={date:col('дата'),net:col('соцсет'),fmt:col('формат'),topic:col('тема'),reach:col('охват'),views:col('просмотр'),
+    likes:col('лайк'),comments:col('коммент'),reposts:col('репост'),saves:col('сохран'),follows:col('подписк'),clicks:col('переход')};
+  const out=[];
+  for(const r of rows.slice(1)){
+    const net=netOf(r[I.net]); const date=parseDate(r[I.date]); const reach=num(r[I.reach]);
+    if(!net||!date||reach==null) continue;
+    const g=k=>I[k]<0?0:(num(r[I[k]])||0);
+    out.push({date,net,fmt:fmtOf(r[I.fmt]),fmtRaw:r[I.fmt]||'',topic:r[I.topic]||'Без темы',reach,
+      views:g('views'),likes:g('likes'),comments:g('comments'),reposts:g('reposts'),saves:g('saves'),follows:g('follows'),clicks:g('clicks')});
+  }
+  return out.sort((a,b)=>a.date-b.date);
+}
+function parseWeekly(text){
+  const rows=parseCSV(text); const res={ig:{},yt:{},total:{},labels:(rows[0]||[]).slice(1)};
+  let sec='total';
+  for(const r of rows.slice(1)){
+    const name=(r[0]||'').toLowerCase(); if(!name) continue;
+    const vals=r.slice(1).map(num);
+    const hasVals=vals.some(v=>v!=null);
+    if(!hasVals && name===name.toUpperCase().toLowerCase() && r[0]===r[0].toUpperCase()){ // заголовок раздела
+      sec=netOf(name)||(/общ/.test(name)?'total':'other'); continue;
+    }
+    if(!res[sec]) continue;
+    let key=null;
+    if(/прирост/.test(name)) key='gain';
+    else if(/подписчик/.test(name)) key='subs';
+    else if(/охват/.test(name)) key='reach';
+    else if(/просмотр/.test(name)) key='views';
+    else if(/заявк|лид/.test(name)) key='leads';
+    else if(/продаж/.test(name)) key='sales';
+    else if(/переход/.test(name)) key='clicks';
+    if(key) res[sec][key]=vals;
+  }
+  return res;
+}
+function parseGoals(text){
+  const rows=parseCSV(text); const g={};
+  for(const r of rows.slice(1)){
+    const n=(r[0]||'').toLowerCase();
+    if(/подписчик/.test(n)) g.subs=num(r[1])??num(r[2]);
+  }
+  return g;
+}
+
+/* ============ СОСТОЯНИЕ ============ */
+let DATA=null;
+const S={net:'ig',per:'month',goal:null};
+try{ const s=JSON.parse(localStorage.getItem('marina-dash')||'{}'); if(s.net) S.net=s.net; if(s.per) S.per=s.per; }catch(e){}
+function load(raw){
+  fixes.length=0;
+  DATA={content:parseContent(raw.content),weekly:parseWeekly(raw.weekly),goals:parseGoals(raw.goals),date:raw.date};
+}
+
+/* ============ ФОРМАТЫ ============ */
+const MONTHS=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+const nf=new Intl.NumberFormat('ru-RU');
+const fmtN=v=>v==null?'—':nf.format(Math.round(v));
+function fmtShort(v){
+  if(v==null) return '—';
+  if(Math.abs(v)>=1e6) return (v/1e6).toFixed(1).replace('.',',')+' млн';
+  if(Math.abs(v)>=1e4) return Math.round(v/1e3)+' тыс';
+  return fmtN(v);
+}
+const fmtPct=(v,d=1)=>v==null||!isFinite(v)?'—':v.toFixed(d).replace('.',',')+'%';
+const fmtDate=d=>String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();
+const fmtDay=d=>d.getDate()+' '+MONTHS[d.getMonth()];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function plural(n,a,b,c){n=Math.abs(n)%100;const n1=n%10;if(n>10&&n<20)return c;if(n1>1&&n1<5)return b;if(n1===1)return a;return c;}
+
+const FMT={
+  ig:{reels:'Рилс',posts:'Посты',stories:'Stories'},
+  yt:{reels:'Shorts',posts:'Видео',stories:'Сообщество'}
+};
+const FMT_COLOR={reels:'var(--accent)',posts:'var(--pista)',stories:'var(--blue)'};
+const NET_NAME={ig:'Инстаграм',yt:'YouTube'};
+const PER_DAYS={week:7,month:30};
+const PER_PREV={week:'к прошлой неделе',month:'к прошлому месяцу'};
+
+/* ============ РАСЧЕТЫ ============ */
+const er=list=>{const r=sum(list,'reach');return r?(sum(list,'likes')+sum(list,'comments')+sum(list,'saves'))/r*100:null;};
+const sum=(list,k)=>list.reduce((s,p)=>s+(p[k]||0),0);
+function periodSlices(posts){
+  if(!posts.length) return {cur:[],prev:null,from:null,to:null};
+  const anchor=posts[posts.length-1].date;
+  if(S.per==='all') return {cur:posts,prev:null,from:posts[0].date,to:anchor};
+  const days=PER_DAYS[S.per];
+  const a=+anchor, from=a-(days-1)*DAY, pfrom=from-days*DAY;
+  return {
+    cur:posts.filter(p=>+p.date>=from&&+p.date<=a),
+    prev:posts.filter(p=>+p.date>=pfrom&&+p.date<from),
+    from:new Date(from),to:anchor
+  };
+}
+function median(a){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function classifier(posts){
+  const med=median(posts.map(p=>p.reach));
+  return p=> p.reach>=med*5?'viral':p.reach>=med*1.5?'strong':'normal';
+}
+const CLASS_NAME={viral:'вирусный',strong:'сильный',normal:'обычный'};
+
+/* ============ ОТРИСОВКА ============ */
+const $=id=>document.getElementById(id);
+function render(){
+  const all=DATA.content.filter(p=>p.net===S.net);
+  const sl=periodSlices(all);
+  const net=NET_NAME[S.net];
+  document.querySelectorAll('#netSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.net===S.net));
+  document.querySelectorAll('#perSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.per===S.per));
+  renderKPI(all,sl);
+  renderGrowth(all);
+  renderMix(sl.cur);
+  renderFormats(sl.cur);
+  renderFunnel(sl.cur);
+  renderTop(all,sl);
+  renderPlan(all);
+  const n=[];
+  if(sl.from) n.push('Период «'+({week:'неделя',month:'месяц',all:'все время'})[S.per]+'» для '+net+': '+fmtDate(sl.from)+' – '+fmtDate(sl.to)+' (отсчет от последней публикации в журнале).');
+  n.push('ER = (лайки + комментарии + сохранения) / охват × 100.');
+  if(fixes.length) n.push('В журнале исправлена опечатка в дате: '+fixes.join(', ')+'.');
+  n.push('Данные: таблица «Статистика Марина, нутрициолог», листы «Еженедельная статистика», «Контент», «Цели».');
+  $('notes').textContent=n.join(' ');
+}
+
+function deltaHTML(cur,prev,isPct){
+  if(S.per==='all') return '<span>за все время</span>';
+  if(prev==null||cur==null) return '<span>нет данных для сравнения</span>';
+  let txt;
+  if(isPct){ const d=cur-prev; txt=(d>=0?'↑ ':'↓ ')+Math.abs(d).toFixed(1).replace('.',',')+' п.п.'; return '<span class="'+(d>=0?'up':'down')+'">'+txt+'</span> '+PER_PREV[S.per]; }
+  if(prev===0) return cur>0?'<span class="up">↑</span> в прошлом периоде публикаций не было':'<span>без изменений</span>';
+  const d=(cur-prev)/prev*100;
+  txt=(d>=0?'↑ ':'↓ ')+fmtN(Math.abs(d))+'%';
+  return '<span class="'+(d>=0?'up':'down')+'">'+txt+'</span> '+PER_PREV[S.per];
+}
+function renderKPI(all,{cur,prev}){
+  const k=[
+    {label:'подписки',v:cur.length?sum(cur,'follows'):null,p:prev&&prev.length?sum(prev,'follows'):(prev?0:null),foot:'пришли с публикаций'},
+    {label:'просмотры',v:cur.length?sum(cur,'views'):null,p:prev&&prev.length?sum(prev,'views'):(prev?0:null)},
+    {label:'охват',v:cur.length?sum(cur,'reach'):null,p:prev&&prev.length?sum(prev,'reach'):(prev?0:null)},
+    {label:'вовлеченность (ER)',v:er(cur),p:prev&&prev.length?er(prev):null,pct:true}
+  ];
+  const w=DATA.weekly[S.net]; const lastSubs=w&&w.subs?[...w.subs].reverse().find(v=>v!=null):null;
+  if(lastSubs!=null) k[0].foot='всего подписчиков: '+fmtN(lastSubs);
+  k[1].foot=cur.length?cur.length+' '+plural(cur.length,'публикация','публикации','публикаций'):'';
+  k[2].foot=cur.length?'в среднем '+fmtShort(sum(cur,'reach')/cur.length)+' на публикацию':'';
+  k[3].foot='лайки + комментарии + сохранения';
+  $('kpis').innerHTML=k.map(x=>`<div class="card c3 kpi">
+      <div class="label">${x.label}</div>
+      <div class="big num">${x.v==null?'—':x.pct?fmtPct(x.v):fmtN(x.v)}</div>
+      <div class="delta">${all.length?deltaHTML(x.v,x.p,x.pct):'нет публикаций в таблице'}</div>
+      <div class="foot">${x.foot||''}</div></div>`).join('');
+}
+
+/* недельные ряды: из листа «Еженедельная статистика», если заполнен; иначе — из журнала публикаций */
+function weeklySeries(all){
+  const w=DATA.weekly[S.net]||{};
+  const filled=a=>a&&a.filter(v=>v!=null).length>=2;
+  if(filled(w.gain)||filled(w.reach)){
+    const labels=DATA.weekly.labels;
+    const idx=labels.map((_,i)=>i).filter(i=>(w.gain&&w.gain[i]!=null)||(w.reach&&w.reach[i]!=null));
+    return {src:'лист «Еженедельная статистика»',pts:idx.map(i=>({label:labels[i],subs:w.gain?w.gain[i]:null,reach:w.reach?w.reach[i]:null}))};
+  }
+  if(!all.length) return {src:'',pts:[]};
+  const monday=d=>{const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));x.setHours(0,0,0,0);return x;};
+  const start=monday(all[0].date), end=monday(all[all.length-1].date);
+  const pts=[];
+  for(let t=new Date(start);t<=end;t=new Date(+t+7*DAY)){
+    const e=new Date(+t+6*DAY);
+    const ps=all.filter(p=>p.date>=t&&p.date<=new Date(+e+DAY-1));
+    pts.push({label:fmtDay(t)+' – '+fmtDay(e),short:t.getDate()+'.'+String(t.getMonth()+1).padStart(2,'0'),subs:sum(ps,'follows'),reach:sum(ps,'reach'),n:ps.length});
+  }
+  return {src:'журнал публикаций, по календарным неделям',pts};
+}
+function smoothPath(P){
+  if(P.length<2) return '';
+  let d='M'+P[0][0]+','+P[0][1];
+  for(let i=0;i<P.length-1;i++){
+    const p0=P[i-1]||P[i],p1=P[i],p2=P[i+1],p3=P[i+2]||p2,t=6;
+    let c1y=p1[1]+(p2[1]-p0[1])/t, c2y=p2[1]-(p3[1]-p1[1])/t;
+    const lo=Math.min(p1[1],p2[1]),hi=Math.max(p1[1],p2[1]); // без выбросов за точки
+    c1y=Math.max(lo,Math.min(hi,c1y)); c2y=Math.max(lo,Math.min(hi,c2y));
+    d+=` C${p1[0]+(p2[0]-p0[0])/t},${c1y} ${p2[0]-(p3[0]-p1[0])/t},${c2y} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+function niceMax(v){if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));const f=v/e;return (f<=1?1:f<=2?2:f<=5?5:10)*e;}
+function areaChart(el,pts,key,color,gid){
+  if(!pts.length){el.innerHTML='<div class="empty-note">нет данных</div>';return;}
+  const W=360,H=170,L=40,R=12,T=12,B=26;
+  const max=niceMax(Math.max(...pts.map(p=>p[key]||0)));
+  const x=i=>pts.length===1?L+(W-L-R)/2:L+i*(W-L-R)/(pts.length-1);
+  const y=v=>T+(H-T-B)*(1-(v||0)/max);
+  const P=pts.map((p,i)=>[x(i),y(p[key])]);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key==='subs'?'подписки':'охват'} по неделям">`;
+  s+=`<defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>`;
+  for(let i=0;i<=2;i++){const v=max*i/2,yy=y(v);s+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/><text x="${L-6}" y="${yy+4}" text-anchor="end">${fmtShort(v)}</text>`;}
+  const every=Math.ceil(pts.length/6);
+  pts.forEach((p,i)=>{ if(i%every===0||i===pts.length-1) s+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${esc(p.short||p.label.replace(/Неделя\s*/,'н'))}</text>`;});
+  if(P.length>1){
+    const line=smoothPath(P);
+    s+=`<path d="${line} L${P[P.length-1][0]},${y(0)} L${P[0][0]},${y(0)} Z" fill="url(#${gid})"/>`;
+    s+=`<path d="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`;
+  }
+  P.forEach((q,i)=>{const last=i===P.length-1;s+=`<circle cx="${q[0]}" cy="${q[1]}" r="${last?5:3.5}" fill="${last?color:'var(--card)'}" stroke="${color}" stroke-width="2"/>`;});
+  const cw=(W-L-R)/Math.max(1,pts.length-1);
+  pts.forEach((p,i)=>{s+=`<rect x="${x(i)-cw/2}" y="${T}" width="${cw}" height="${H-T-B}" fill="transparent" data-tip="${esc(p.label)}: ${fmtN(p[key])}${p.n!=null?' · '+p.n+' публ.':''}"/>`;});
+  el.innerHTML=s+'</svg>';
+}
+function renderGrowth(all){
+  const {src,pts}=weeklySeries(all);
+  $('growthHint').textContent=pts.length?'все время · источник: '+src:'нет данных по '+NET_NAME[S.net]+' в таблице';
+  const last=pts[pts.length-1];
+  $('gSubsVal').textContent=last?'+'+fmtN(last.subs):'—';
+  $('gReachVal').textContent=last?fmtN(last.reach):'—';
+  areaChart($('gSubs'),pts,'subs','var(--accent)','ga');
+  areaChart($('gReach'),pts,'reach','var(--pista)','gb');
+}
+function renderMix(cur){
+  const el=$('mix'); const keys=['reels','posts','stories'];
+  const cnt=Object.fromEntries(keys.map(k=>[k,cur.filter(p=>p.fmt===k).length]));
+  const total=cur.length;
+  if(!total){el.innerHTML='<div class="empty-note">нет публикаций за период</div>';return;}
+  const R=52,C=2*Math.PI*R,gap=total>1&&keys.filter(k=>cnt[k]).length>1?3:0; let off=0;
+  let s=`<svg viewBox="0 0 140 140" role="img" aria-label="доля форматов"><g transform="rotate(-90 70 70)">
+    <circle cx="70" cy="70" r="${R}" fill="none" stroke="var(--track)" stroke-width="18"/>`;
+  keys.forEach(k=>{ if(!cnt[k])return; const len=cnt[k]/total*C;
+    s+=`<circle cx="70" cy="70" r="${R}" fill="none" stroke="${FMT_COLOR[k]}" stroke-width="18" stroke-dasharray="${Math.max(0,len-gap)} ${C}" stroke-dashoffset="${-off}" data-tip="${FMT[S.net][k]}: ${cnt[k]} из ${total}"/>`; off+=len; });
+  s+=`</g><text x="70" y="68" text-anchor="middle" style="font-size:24px;font-weight:650;fill:var(--ink)">${total}</text><text x="70" y="86" text-anchor="middle">${plural(total,'публикация','публикации','публикаций')}</text></svg>`;
+  el.innerHTML=`<div class="donut-wrap">${s}<div class="legend">${keys.map(k=>`
+    <div class="row"><span class="sw" style="background:${FMT_COLOR[k]}"></span><span>${FMT[S.net][k]}</span><span class="pct num">${fmtN(cnt[k]/total*100)}%</span>
+    <span class="cnt">${cnt[k]} ${plural(cnt[k],'публикация','публикации','публикаций')}</span></div>`).join('')}</div></div>`;
+}
+function renderFormats(cur){
+  const el=$('formats'); const keys=['reels','posts','stories'];
+  if(!cur.length){el.innerHTML='<div class="empty-note">нет публикаций за период</div>';return;}
+  const rows=keys.map(k=>{const ps=cur.filter(p=>p.fmt===k);return {k,n:ps.length,avg:ps.length?sum(ps,'reach')/ps.length:null,med:median(ps.map(p=>p.reach)),er:er(ps)};});
+  const max=Math.max(...rows.map(r=>r.avg||0))||1;
+  el.innerHTML='<div class="bars">'+rows.map(r=>`<div class="bar-row">
+    <div class="top"><span>${FMT[S.net][r.k]}</span><span class="num">${r.avg==null?'нет публикаций':fmtN(r.avg)}</span></div>
+    <div class="track"><div class="fill" style="width:${r.avg?r.avg/max*100:0}%;background:${FMT_COLOR[r.k]}"></div></div>
+    <div class="meta">${r.n?`${r.n} ${plural(r.n,'публикация','публикации','публикаций')} · медиана ${fmtN(r.med)} · ER ${fmtPct(r.er)}`:'добавьте публикации этого формата в лист «Контент»'}</div></div>`).join('')+'</div>';
+}
+function renderFunnel(cur){
+  const el=$('funnel');
+  if(!cur.length){el.innerHTML='<div class="empty-note">нет публикаций за период</div>';return;}
+  const w=DATA.weekly.total||{};
+  const sumArr=a=>a&&a.some(v=>v!=null)?a.reduce((s,v)=>s+(v||0),0):null;
+  const steps=[
+    {n:'Охват',v:sum(cur,'reach')},
+    {n:'Просмотры',v:sum(cur,'views')},
+    {n:'Переходы',v:sum(cur,'clicks')},
+    {n:'Заявки',v:S.per==='all'?sumArr(w.leads):null},
+    {n:'Продажи',v:S.per==='all'?sumArr(w.sales):null}
+  ];
+  const max=Math.log10(Math.max(10,steps[0].v));
+  let h='<div class="funnel">';
+  steps.forEach((s,i)=>{
+    if(i>0){
+      const p=steps[i-1].v, c=s.v;
+      h+=`<div class="f-conv"><span></span><span>${p&&c!=null?'↓ <b class="num">'+fmtPct(c/p*100,c/p<.01?2:1)+'</b> дошли до шага «'+s.n.toLowerCase()+'»':'↓ нет данных для расчета конверсии'}</span></div>`;
+    }
+    const width=s.v?Math.max(14,Math.log10(Math.max(1,s.v))/max*100):0;
+    h+=`<div class="f-step"><span class="f-name">${s.n}</span>${s.v!=null&&s.v>0
+      ?`<div class="f-bar num" style="width:${Math.min(100,width)}%" data-tip="${s.n}: ${fmtN(s.v)}">${fmtN(s.v)}</div>`
+      :`<div class="f-bar empty">нет данных — внесите в таблицу</div>`}</div>`;
+  });
+  el.innerHTML=h+'</div>';
+}
+function renderTop(all,{cur}){
+  const el=$('top'); const cls=classifier(all);
+  const top=[...cur].sort((a,b)=>b.reach-a.reach).slice(0,3);
+  $('topHint').textContent='по охвату за период · метка относительно медианного охвата ('+fmtN(median(all.map(p=>p.reach)))+'): сильный — от ×1,5, вирусный — от ×5';
+  if(!top.length){el.innerHTML='<div class="empty-note">нет публикаций за период</div>';return;}
+  el.innerHTML='<div class="tops">'+top.map(p=>{const c=cls(p);return `<article class="post">
+    <div class="row1"><span>${fmtDate(p.date)} · ${esc(p.fmtRaw||FMT[S.net][p.fmt])}</span><span class="pill ${c}">${CLASS_NAME[c]}</span></div>
+    <div class="topic">${esc(p.topic)}</div>
+    <div class="stats num">
+      <div><b>${fmtShort(p.reach)}</b>охват</div>
+      <div><b>${fmtShort(p.views)}</b>просмотры</div>
+      <div><b>${fmtPct(er([p]))}</b>ER</div>
+      <div><b>+${fmtN(p.follows)}</b>подписок</div>
+    </div></article>`;}).join('')+'</div>';
+}
+function renderPlan(all){
+  const el=$('plan');
+  const goal=S.goal??DATA.goals.subs??CONFIG.defaultGoal;
+  if(!all.length){el.innerHTML='<div class="empty-note">нет публикаций по '+NET_NAME[S.net]+' — расчет появится, когда в листе «Контент» будут данные</div>';return;}
+  const cls=classifier(all);
+  const by={viral:[],strong:[],normal:[]}; all.forEach(p=>by[cls(p)].push(p));
+  const avg=a=>a.length?sum(a,'follows')/a.length:null;
+  const aS=avg(by.strong), aV=avg(by.viral), aN=avg(by.normal);
+  const anchor=all[all.length-1].date;
+  const last30=all.filter(p=>+p.date>anchor-30*DAY);
+  const pace=sum(last30,'follows');
+  const base=aS||aV;
+  const need=base?Math.ceil(goal/base):null;
+  const needV=aV?Math.ceil(goal/aV):null;
+  el.innerHTML=`<div class="plan">
+    <div>
+      <label class="goal-in" for="goalInput">Цель: <input id="goalInput" class="num" type="number" min="1" step="100" value="${goal}"> подписчиков в месяц</label>
+      <div class="need num">${need==null?'—':fmtN(need)}</div>
+      <div class="need-cap">${need==null?'пока нет сильных публикаций для расчета':plural(need,'сильная публикация','сильные публикации','сильных публикаций')+' в месяц'}</div>
+      <div class="need-sub">${need==null?'':'≈ '+(need/4.3).toFixed(1).replace('.',',')+' в неделю · '+fmtN(goal)+' ÷ '+fmtN(base)+' подписок с одной '+(aS?'сильной':'вирусной')+' публикации'}</div>
+      <div class="progress">
+        <div class="track"><div class="fill" style="width:${Math.min(100,pace/goal*100)}%"></div></div>
+        <div class="cap num"><span>последние 30 дней: +${fmtN(pace)}</span><span>${fmtN(pace/goal*100)}% цели</span></div>
+      </div>
+    </div>
+    <div class="calc num">
+      <div class="line"><span>обычная публикация приносит</span><span>${aN==null?'—':'+'+fmtN(aN)+' подп.'} · ${by.normal.length} шт.</span></div>
+      <div class="line"><span>сильная публикация приносит</span><span>${aS==null?'—':'+'+fmtN(aS)+' подп.'} · ${by.strong.length} шт.</span></div>
+      <div class="line"><span>вирусная публикация приносит</span><span>${aV==null?'—':'+'+fmtN(aV)+' подп.'} · ${by.viral.length} шт.</span></div>
+      <div class="line"><span>или вирусных в месяц</span><span>${needV==null?'—':fmtN(needV)}</span></div>
+      <div class="line"><span>не хватает до цели в месяц</span><span>${fmtN(Math.max(0,goal-pace))}</span></div>
+    </div></div>`;
+  $('goalInput').addEventListener('change',e=>{const v=+e.target.value;if(v>0){S.goal=v;renderPlan(all);}});
+}
+
+/* ============ ОБНОВЛЕНИЕ ИЗ ТАБЛИЦЫ ============ */
+function sheetUrl(key){
+  if(CONFIG.csv[key]) return CONFIG.csv[key];
+  return 'https://docs.google.com/spreadsheets/d/'+CONFIG.sheetId+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(CONFIG.sheetNames[key]);
+}
+async function fetchText(url){
+  const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),10000);
+  try{ const r=await fetch(url,{signal:ctl.signal,cache:'no-store'}); if(!r.ok) throw 0; const tx=await r.text(); if(/^\s*</.test(tx)) throw 0; return tx; }
+  finally{ clearTimeout(t); }
+}
+async function refresh(){
+  const b=$('refresh'); b.disabled=true; b.textContent='обновляю…';
+  try{
+    const [weekly,content,goals]=await Promise.all(['weekly','content','goals'].map(k=>fetchText(sheetUrl(k)).catch(()=>null)));
+    if(content){
+      const today=new Date(); const iso=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+      load({content,weekly:weekly||SNAPSHOT.weekly,goals:goals||SNAPSHOT.goals,date:iso});
+      render(); setUpdated(true);
+    }
+    // если таблица недоступна — молча остаемся на вшитых цифрах
+  } finally { b.disabled=false; b.textContent='↻ обновить'; }
+}
+function setUpdated(now){
+  const [y,m,d]=DATA.date.split('-').map(Number); const dt=new Date(y,m-1,d);
+  let t=+dt===+TODAY?'обновлено сегодня':'обновлено '+fmtDate(dt);
+  if(now) t+=' в '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  $('updated').textContent=t;
+}
+
+/* ============ СОБЫТИЯ ============ */
+function save(){try{localStorage.setItem('marina-dash',JSON.stringify({net:S.net,per:S.per}));}catch(e){}}
+$('netSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.net=b.dataset.net;save();render();});
+$('perSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.per=b.dataset.per;save();render();});
+$('refresh').addEventListener('click',refresh);
+const tip=$('tip');
+document.addEventListener('pointermove',e=>{
+  const t=e.target.closest&&e.target.closest('[data-tip]');
+  if(!t){tip.hidden=true;return;}
+  tip.textContent=t.getAttribute('data-tip'); tip.hidden=false;
+  tip.style.left=Math.min(window.innerWidth-80,Math.max(80,e.clientX))+'px'; tip.style.top=(e.clientY-8)+'px';
+});
+
+load(SNAPSHOT); setUpdated(false); render();
+</script>
+</body>
+</html>
