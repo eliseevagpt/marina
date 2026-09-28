@@ -97,6 +97,19 @@ svg text{fill:var(--muted);font-size:11px;font-family:inherit}
 .legend .pct{font-weight:600}
 .legend .cnt{color:var(--muted);font-size:12px;grid-column:2/4;margin-top:-8px}
 
+/* форматы подачи */
+.tbl-wrap{overflow-x:auto;margin-inline:-4px;padding-inline:4px}
+table.cr{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+table.cr th{font-size:12px;font-weight:500;color:var(--muted);text-align:right;padding:0 10px 10px;white-space:nowrap}
+table.cr th:first-child,table.cr td:first-child{text-align:left;padding-left:0}
+table.cr td{text-align:right;padding:11px 10px;border-top:1px solid var(--grid);white-space:nowrap}
+table.cr td:first-child{white-space:normal;min-width:120px}
+table.cr td.best{color:var(--accent);font-weight:700}
+table.cr .n{display:block;font-size:12px;color:var(--muted)}
+.verdict{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.verdict span{font-size:13px;background:var(--accent-soft);color:var(--ink);padding:6px 12px;border-radius:999px}
+.verdict b{color:var(--accent)}
+
 /* полосы */
 .bars{display:flex;flex-direction:column;gap:16px}
 .bar-row .top{display:flex;justify-content:space-between;gap:12px;font-size:14px;margin-bottom:6px}
@@ -187,7 +200,7 @@ svg text{fill:var(--muted);font-size:11px;font-family:inherit}
   <section class="grid" id="kpis" aria-label="Ключевые показатели"></section>
 
   <section class="grid">
-    <div class="card c8">
+    <div class="card c12">
       <div class="head"><div><h2>Рост по неделям</h2><div class="hint" id="growthHint"></div></div></div>
       <div class="charts2">
         <div class="mini"><h3>подписки за неделю</h3><div class="val num" id="gSubsVal"></div><div id="gSubs"></div></div>
@@ -197,6 +210,10 @@ svg text{fill:var(--muted);font-size:11px;font-family:inherit}
     <div class="card c4">
       <div class="head"><div><h2>Микс контента</h2><div class="hint">доля форматов по числу публикаций</div></div></div>
       <div id="mix"></div>
+    </div>
+    <div class="card c8">
+      <div class="head"><div><h2>Форматы подачи</h2><div class="hint">какая подача дала лучшие показатели · по столбцу «Формат» (доска, стикеры, рейтинг) · лучшее значение в столбце выделено</div></div></div>
+      <div id="creative"></div>
     </div>
   </section>
 
@@ -350,14 +367,14 @@ function parseContent(text){
   const rows=parseCSV(text); if(!rows.length) return [];
   const h=rows[0].map(x=>x.toLowerCase());
   const col=k=>h.findIndex(x=>x.includes(k));
-  const I={date:col('дата'),net:col('соцсет'),fmt:col('формат'),topic:col('тема'),reach:col('охват'),views:col('просмотр'),
+  const I={crea:h.findIndex((x,i)=>x.includes('формат')&&i!==h.findIndex(y=>y.includes('формат'))),date:col('дата'),net:col('соцсет'),fmt:col('формат'),topic:col('тема'),reach:col('охват'),views:col('просмотр'),
     likes:col('лайк'),comments:col('коммент'),reposts:col('репост'),saves:col('сохран'),follows:col('подписк'),clicks:col('переход')};
   const out=[];
   for(const r of rows.slice(1)){
     const net=netOf(r[I.net]); const date=parseDate(r[I.date]); const reach=num(r[I.reach]);
     if(!net||!date||reach==null) continue;
     const g=k=>I[k]<0?0:(num(r[I[k]])||0);
-    out.push({date,net,fmt:fmtOf(r[I.fmt]),fmtRaw:r[I.fmt]||'',topic:r[I.topic]||'Без темы',reach,
+    out.push({date,net,fmt:fmtOf(r[I.fmt]),fmtRaw:r[I.fmt]||'',crea:I.crea<0?'':(r[I.crea]||''),topic:r[I.topic]||'Без темы',reach,
       views:g('views'),likes:g('likes'),comments:g('comments'),reposts:g('reposts'),saves:g('saves'),follows:g('follows'),clicks:g('clicks')});
   }
   return out.sort((a,b)=>a.date-b.date);
@@ -461,6 +478,7 @@ function render(){
   renderKPI(all,sl);
   renderGrowth(all);
   renderMix(sl.cur);
+  renderCreative(sl.cur);
   renderFormats(sl.cur);
   renderFunnel(sl.cur);
   renderTop(all,sl);
@@ -537,7 +555,7 @@ function smoothPath(P){
 function niceMax(v){if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));const f=v/e;return (f<=1?1:f<=2?2:f<=5?5:10)*e;}
 function areaChart(el,pts,key,color,gid){
   if(!pts.length){el.innerHTML='<div class="empty-note">нет данных</div>';return;}
-  const W=360,H=170,L=40,R=12,T=12,B=26;
+  const W=560,H=190,L=44,R=12,T=12,B=26;
   const max=niceMax(Math.max(...pts.map(p=>p[key]||0)));
   const x=i=>pts.length===1?L+(W-L-R)/2:L+i*(W-L-R)/(pts.length-1);
   const y=v=>T+(H-T-B)*(1-(v||0)/max);
@@ -580,6 +598,42 @@ function renderMix(cur){
   el.innerHTML=`<div class="donut-wrap">${s}<div class="legend">${keys.map(k=>`
     <div class="row"><span class="sw" style="background:${FMT_COLOR[k]}"></span><span>${FMT[S.net][k]}</span><span class="pct num">${fmtN(cnt[k]/total*100)}%</span>
     <span class="cnt">${cnt[k]} ${plural(cnt[k],'публикация','публикации','публикаций')}</span></div>`).join('')}</div></div>`;
+}
+function renderCreative(cur){
+  const el=$('creative');
+  if(!cur.length){el.innerHTML='<div class="empty-note">нет публикаций за период</div>';return;}
+  // группируем по названию подачи без цифр: «РЕЙТИНГ 10/10» и «РЕЙТИНГ 10/11» — одна группа
+  const groups={};
+  cur.forEach(p=>{
+    const raw=p.crea.trim(); const key=raw.toLowerCase().replace(/[\d\/.,]+/g,' ').replace(/\s+/g,' ').trim()||'—';
+    (groups[key]=groups[key]||{raw:{},ps:[]}).ps.push(p); groups[key].raw[raw]=(groups[key].raw[raw]||0)+1;
+  });
+  const keys=Object.keys(groups);
+  if(keys.length===1&&keys[0]==='—'){el.innerHTML='<div class="empty-note">в столбце «Формат» (подача) пока пусто</div>';return;}
+  const cap=s=>s.charAt(0).toUpperCase()+s.slice(1).toLowerCase();
+  const rows=keys.map(k=>{const g=groups[k],ps=g.ps,n=ps.length;
+    const label=k==='—'?'без пометки':cap(Object.entries(g.raw).sort((a,b)=>b[1]-a[1])[0][0]);
+    return {label,n,avgReach:sum(ps,'reach')/n,medReach:median(ps.map(p=>p.reach)),avgFollows:sum(ps,'follows')/n,
+      medFollows:median(ps.map(p=>p.follows)),er:er(ps),clicks:sum(ps,'clicks')/n};
+  }).sort((a,b)=>b.avgFollows-a.avgFollows);
+  const cols=[
+    {k:'avgReach',t:'средний охват',f:fmtN},{k:'medReach',t:'медиана охвата',f:fmtN},
+    {k:'avgFollows',t:'подписок в среднем',f:v=>'+'+fmtN(v)},{k:'medFollows',t:'медиана подписок',f:v=>'+'+fmtN(v)},
+    {k:'er',t:'ER',f:v=>fmtPct(v)},{k:'clicks',t:'переходов в среднем',f:v=>fmtN(v)}
+  ];
+  const best={}; cols.forEach(c=>{best[c.k]=rows.length>1?Math.max(...rows.map(r=>r[c.k]??-1)):null;});
+  let h='<div class="tbl-wrap"><table class="cr num"><thead><tr><th>подача</th>'+cols.map(c=>'<th>'+c.t+'</th>').join('')+'</tr></thead><tbody>';
+  rows.forEach(r=>{h+='<tr><td>'+esc(r.label)+'<span class="n">'+r.n+' '+plural(r.n,'публикация','публикации','публикаций')+'</span></td>'+
+    cols.map(c=>'<td'+(r[c.k]!=null&&r[c.k]===best[c.k]?' class="best"':'')+'>'+c.f(r[c.k])+'</td>').join('')+'</tr>';});
+  h+='</tbody></table></div>';
+  if(rows.length>1){
+    const top=k=>rows.reduce((a,b)=>(b[k]??-1)>(a[k]??-1)?b:a);
+    const v=[['больше всего подписок в среднем','avgFollows',x=>'+'+fmtN(x)],['лучший охват (медиана)','medReach',fmtN],['лучшая вовлеченность','er',x=>fmtPct(x)]];
+    const few=rows.filter(r=>r.n<3).map(r=>r.label);
+    h+='<div class="verdict">'+v.map(([t,k,f])=>{const r=top(k);return '<span>'+t+': <b>'+esc(r.label)+'</b> '+f(r[k])+' · '+r.n+' публ.'+'</span>';}).join('')+'</div>';
+    if(few.length) h+='<div class="hint" style="margin-top:10px">Меньше 3 публикаций: '+few.map(esc).join(', ')+' — вывод предварительный, один удачный ролик сильно сдвигает среднее.</div>';
+  }
+  el.innerHTML=h;
 }
 function renderFormats(cur){
   const el=$('formats'); const keys=['reels','posts','stories'];
