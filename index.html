@@ -50,6 +50,11 @@ header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-be
 h1{margin:0;font-size:clamp(22px,3.2vw,30px);font-weight:700;letter-spacing:.04em;text-wrap:balance}
 .sub{margin-top:4px;color:var(--muted);font-size:14px}
 .sub b{color:var(--ink-2);font-weight:500}
+.pubs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pubs span{font-size:13px;color:var(--ink-2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.pubs b{font-size:15px;color:var(--ink);font-weight:650;margin-right:4px}
+.pubs span.on{border-color:var(--accent);background:var(--accent-soft)}
+.pubs span.on b{color:var(--accent)}
 .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
 .seg button{
@@ -74,8 +79,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:16px}
 
 /* KPI */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px}
 .kpi .label{color:var(--muted);font-size:13px;text-transform:lowercase;letter-spacing:.02em}
-.kpi .big{font-size:clamp(30px,3.6vw,40px);font-weight:650;letter-spacing:-.01em;line-height:1.1;margin-top:8px}
+.kpi .big{font-size:clamp(28px,3vw,36px);font-weight:650;letter-spacing:-.01em;line-height:1.1;margin-top:8px}
 .kpi .delta{margin-top:8px;font-size:13px;color:var(--muted)}
 .kpi .delta .up{color:var(--good);font-weight:600}
 .kpi .delta .down{color:var(--muted);font-weight:600}
@@ -162,11 +168,16 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
 #tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--card);font-size:12px;padding:6px 9px;border-radius:8px;
   white-space:nowrap;transform:translate(-50%,-110%);z-index:10}
 
+@media (max-width:1060px){
+  .kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .kpis>.kpi{grid-column:span 2}.kpis>.kpi:nth-child(n+4){grid-column:span 3}
+}
 @media (max-width:980px){
   .c3{grid-column:span 6}.c4,.c8{grid-column:span 12}
 }
 @media (max-width:720px){
   .c3,.c4,.c6,.c8,.c12{grid-column:span 12}
+  .kpis{grid-template-columns:1fr 1fr}.kpis>.kpi,.kpis>.kpi:nth-child(n+4){grid-column:span 1}.kpis>.kpi:last-child{grid-column:span 2}
   .charts2,.plan,.tops{grid-template-columns:1fr}
   .card{padding:18px}
   .f-step,.f-conv{grid-template-columns:84px 1fr}
@@ -182,6 +193,7 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
     <div>
       <h1>МАРИНА, НУТРИЦИОЛОГ, ВРАЧ</h1>
       <div class="sub">аналитика соцсетей · <b id="updated">обновлено сегодня</b></div>
+      <div class="pubs num" id="pubs" aria-label="Количество публикаций"></div>
     </div>
     <div class="controls">
       <div class="seg" role="group" aria-label="Соцсеть" id="netSeg">
@@ -197,7 +209,7 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
     </div>
   </header>
 
-  <section class="grid" id="kpis" aria-label="Ключевые показатели"></section>
+  <section class="kpis" id="kpis" aria-label="Ключевые показатели"></section>
 
   <section class="grid">
     <div class="card c12">
@@ -253,9 +265,9 @@ const CONFIG = {
   defaultGoal: 5000
 };
 
-/* ============ ВШИТЫЕ ДАННЫЕ (снимок таблицы на 28.09.2026) ============ */
+/* ============ ВШИТЫЕ ДАННЫЕ (снимок таблицы на 06.10.2026) ============ */
 const SNAPSHOT = {
-  date: '2026-09-28',
+  date: '2026-10-06',
   weekly: `Показатель,Неделя 1,Неделя 2,Неделя 3,Неделя 4,Неделя 5,Неделя 6,Неделя 7,Неделя 8,Неделя 9,Неделя 10,Неделя 11,Неделя 12
 ОБЩИЕ ПОКАЗАТЕЛИ
 Подписчики (всего)
@@ -291,7 +303,7 @@ YOUTUBE
 Прирост подписчиков
 Охват
 Просмотры`,
-  content: `Дата,Соцсеть,Формат,Тема публикации,Формат,Охват,Просмотры,Лайки,Комментарии,Репосты,Сохранения,Подписки с публикации,Переходы,"ER, %",Вывод
+  content: `Дата,Соцсеть,Формат,Тема публикации,Формат подачи,Охват,Просмотры,Лайки,Комментарии,Репосты,Сохранения,Подписки с публикации,Переходы,"ER, %",Вывод
 22.06.2026,Instagram,Рилс,Вы пьете кофе непраивльно (формат доска),ДОСКА,1 951,2354,30,4,23,7,4,6,"2,1",
 23.06.2026,Instagram,Рилс,Вы пьете кофе непраивльно (формат:стикеры),СТИКЕРЫ,1305,1610,23,8,10,6,1,6,"2,8",
 24.06.2026,Instagram,Рилс,Ужинс состоял из... (формат стикеры),СТИКЕРЫ,687,691,15,8,14,5,0,3,"4,1",
@@ -300,7 +312,9 @@ YOUTUBE
 28.06.2026,Instagram,Рилс,Фрукты при сахарном диабете (10/10),РЕЙТИНГ 10/10,5344,5870,68,8,38,21,27,8,"1,8",
 30.06.2026,Instagram,Рилс,Вы пьете кофе непраивльно (формат доска) повтор,ДОСКА,153485,155735,928,103,1340,438,475,143,1,
 30.06.2026,Instagram,Рилс,рейтинг подсластителей (10/10),РЕЙТИНГ 10/11,676,1021,22,8,23,3,1,7,"4,9",
-01.07.2026,Instagram,Рилс,Как быстро терять вес,СТИКЕРЫ,781,1255,17,4,9,6,1,2,"3,5",`,
+01.07.2026,Instagram,Рилс,Как быстро терять вес,СТИКЕРЫ,781,1255,17,4,9,6,1,2,"3,5",
+01.07.2026,Instagram,Пост,Что могут рассказать о вашем состоянии эти  2 симптома,карусель,203,534,8,2,7,2,0,1,"5,9",
+02.07.2026,Instagram,Рилс,Как худеть во время сна,стикеры,1960,2062,30,8,45,9,7,4,"2,4",`,
   goals: `Показатель,План минимум,План максимум,Факт
 Подписчики за период,,,
 Охват,,,
@@ -475,6 +489,7 @@ function render(){
   const net=NET_NAME[S.net];
   document.querySelectorAll('#netSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.net===S.net));
   document.querySelectorAll('#perSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.per===S.per));
+  renderPubs(all);
   renderKPI(all,sl);
   renderGrowth(all);
   renderMix(sl.cur);
@@ -501,19 +516,28 @@ function deltaHTML(cur,prev,isPct){
   txt=(d>=0?'↑ ':'↓ ')+fmtN(Math.abs(d))+'%';
   return '<span class="'+(d>=0?'up':'down')+'">'+txt+'</span> '+PER_PREV[S.per];
 }
+function renderPubs(all){
+  const anchor=all.length?+all[all.length-1].date:0;
+  const cnt=d=>all.filter(p=>+p.date>anchor-d*DAY).length;
+  const items=[['week','за неделю',all.length?cnt(7):0],['month','за месяц',all.length?cnt(30):0],['all','за все время',all.length]];
+  $('pubs').innerHTML='<span style="border:0;background:transparent;padding-left:0">публикаций '+NET_NAME[S.net].replace('Инстаграм','в Инстаграме').replace('YouTube','на YouTube')+':</span>'+
+    items.map(([k,t,n])=>'<span class="'+(k===S.per?'on':'')+'"><b>'+n+'</b>'+t+'</span>').join('');
+}
 function renderKPI(all,{cur,prev}){
   const k=[
     {label:'подписки',v:cur.length?sum(cur,'follows'):null,p:prev&&prev.length?sum(prev,'follows'):(prev?0:null),foot:'пришли с публикаций'},
     {label:'просмотры',v:cur.length?sum(cur,'views'):null,p:prev&&prev.length?sum(prev,'views'):(prev?0:null)},
+    {label:'клики по ссылке в био',v:cur.length?sum(cur,'clicks'):null,p:prev&&prev.length?sum(prev,'clicks'):(prev?0:null)},
     {label:'охват',v:cur.length?sum(cur,'reach'):null,p:prev&&prev.length?sum(prev,'reach'):(prev?0:null)},
     {label:'вовлеченность (ER)',v:er(cur),p:prev&&prev.length?er(prev):null,pct:true}
   ];
   const w=DATA.weekly[S.net]; const lastSubs=w&&w.subs?[...w.subs].reverse().find(v=>v!=null):null;
   if(lastSubs!=null) k[0].foot='всего подписчиков: '+fmtN(lastSubs);
   k[1].foot=cur.length?cur.length+' '+plural(cur.length,'публикация','публикации','публикаций'):'';
-  k[2].foot=cur.length?'в среднем '+fmtShort(sum(cur,'reach')/cur.length)+' на публикацию':'';
-  k[3].foot='лайки + комментарии + сохранения';
-  $('kpis').innerHTML=k.map(x=>`<div class="card c3 kpi">
+  k[2].foot=cur.length&&sum(cur,'reach')?fmtPct(sum(cur,'clicks')/sum(cur,'reach')*100,2)+' от охвата · столбец «Переходы»':'';
+  k[3].foot=cur.length?'в среднем '+fmtShort(sum(cur,'reach')/cur.length)+' на публикацию':'';
+  k[4].foot='лайки + комментарии + сохранения';
+  $('kpis').innerHTML=k.map(x=>`<div class="card kpi">
       <div class="label">${x.label}</div>
       <div class="big num">${x.v==null?'—':x.pct?fmtPct(x.v):fmtN(x.v)}</div>
       <div class="delta">${all.length?deltaHTML(x.v,x.p,x.pct):'нет публикаций в таблице'}</div>
@@ -618,8 +642,8 @@ function renderCreative(cur){
   }).sort((a,b)=>b.avgFollows-a.avgFollows);
   const cols=[
     {k:'avgReach',t:'средний охват',f:fmtN},{k:'medReach',t:'медиана охвата',f:fmtN},
-    {k:'avgFollows',t:'подписок в среднем',f:v=>'+'+fmtN(v)},{k:'medFollows',t:'медиана подписок',f:v=>'+'+fmtN(v)},
-    {k:'er',t:'ER',f:v=>fmtPct(v)},{k:'clicks',t:'переходов в среднем',f:v=>fmtN(v)}
+    {k:'avgFollows',t:'подписок в среднем',f:v=>'+'+fmtN(v)},{k:'medFollows',t:'медиана подп.',f:v=>'+'+fmtN(v)},
+    {k:'er',t:'ER',f:v=>fmtPct(v)},{k:'clicks',t:'клики в био',f:v=>fmtN(v)}
   ];
   const best={}; cols.forEach(c=>{best[c.k]=rows.length>1?Math.max(...rows.map(r=>r[c.k]??-1)):null;});
   let h='<div class="tbl-wrap"><table class="cr num"><thead><tr><th>подача</th>'+cols.map(c=>'<th>'+c.t+'</th>').join('')+'</tr></thead><tbody>';
@@ -653,7 +677,7 @@ function renderFunnel(cur){
   const steps=[
     {n:'Охват',v:sum(cur,'reach')},
     {n:'Просмотры',v:sum(cur,'views')},
-    {n:'Переходы',v:sum(cur,'clicks')},
+    {n:'Клики в био',v:sum(cur,'clicks')},
     {n:'Заявки',v:S.per==='all'?sumArr(w.leads):null},
     {n:'Продажи',v:S.per==='all'?sumArr(w.sales):null}
   ];
