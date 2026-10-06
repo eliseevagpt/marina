@@ -79,7 +79,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .head{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:16px}
 
 /* KPI */
-.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
 .kpi .label{color:var(--muted);font-size:13px;text-transform:lowercase;letter-spacing:.02em}
 .kpi .big{font-size:clamp(28px,3vw,36px);font-weight:650;letter-spacing:-.01em;line-height:1.1;margin-top:8px}
 .kpi .delta{margin-top:8px;font-size:13px;color:var(--muted)}
@@ -169,15 +169,13 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
   white-space:nowrap;transform:translate(-50%,-110%);z-index:10}
 
 @media (max-width:1060px){
-  .kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
-  .kpis>.kpi{grid-column:span 2}.kpis>.kpi:nth-child(n+4){grid-column:span 3}
+  .kpis{grid-template-columns:1fr 1fr}
 }
 @media (max-width:980px){
   .c3{grid-column:span 6}.c4,.c8{grid-column:span 12}
 }
 @media (max-width:720px){
   .c3,.c4,.c6,.c8,.c12{grid-column:span 12}
-  .kpis{grid-template-columns:1fr 1fr}.kpis>.kpi,.kpis>.kpi:nth-child(n+4){grid-column:span 1}.kpis>.kpi:last-child{grid-column:span 2}
   .charts2,.plan,.tops{grid-template-columns:1fr}
   .card{padding:18px}
   .f-step,.f-conv{grid-template-columns:84px 1fr}
@@ -382,14 +380,14 @@ function parseContent(text){
   const h=rows[0].map(x=>x.toLowerCase());
   const col=k=>h.findIndex(x=>x.includes(k));
   const I={crea:h.findIndex((x,i)=>x.includes('формат')&&i!==h.findIndex(y=>y.includes('формат'))),date:col('дата'),net:col('соцсет'),fmt:col('формат'),topic:col('тема'),reach:col('охват'),views:col('просмотр'),
-    likes:col('лайк'),comments:col('коммент'),reposts:col('репост'),saves:col('сохран'),follows:col('подписк'),clicks:col('переход'),bio:h.findIndex(x=>x.includes('био'))};
+    likes:col('лайк'),comments:col('коммент'),reposts:col('репост'),saves:col('сохран'),follows:col('подписк'),clicks:col('переход')};
   const out=[];
   for(const r of rows.slice(1)){
     const net=netOf(r[I.net]); const date=parseDate(r[I.date]); const reach=num(r[I.reach]);
     if(!net||!date||reach==null) continue;
     const g=k=>I[k]<0?0:(num(r[I[k]])||0);
     out.push({date,net,fmt:fmtOf(r[I.fmt]),fmtRaw:r[I.fmt]||'',crea:I.crea<0?'':(r[I.crea]||''),topic:r[I.topic]||'Без темы',reach,
-      views:g('views'),likes:g('likes'),comments:g('comments'),reposts:g('reposts'),saves:g('saves'),follows:g('follows'),clicks:g('clicks'),bio:I.bio<0?null:num(r[I.bio])});
+      views:g('views'),likes:g('likes'),comments:g('comments'),reposts:g('reposts'),saves:g('saves'),follows:g('follows'),clicks:g('clicks')});
   }
   return out.sort((a,b)=>a.date-b.date);
 }
@@ -506,8 +504,6 @@ function render(){
   $('notes').textContent=n.join(' ');
 }
 
-// клики по ссылке в био: null, если ни у одной публикации столбец не заполнен
-function bioSum(list){const f=list.filter(p=>p.bio!=null);return f.length?f.reduce((s,p)=>s+p.bio,0):null;}
 function deltaHTML(cur,prev,isPct){
   if(S.per==='all') return '<span>за все время</span>';
   if(prev==null||cur==null) return '<span>нет данных для сравнения</span>';
@@ -529,17 +525,14 @@ function renderKPI(all,{cur,prev}){
   const k=[
     {label:'подписки',v:cur.length?sum(cur,'follows'):null,p:prev&&prev.length?sum(prev,'follows'):(prev?0:null),foot:'пришли с публикаций'},
     {label:'просмотры',v:cur.length?sum(cur,'views'):null,p:prev&&prev.length?sum(prev,'views'):(prev?0:null)},
-    {label:'клики по ссылке в био',v:bioSum(cur),p:prev&&prev.length?bioSum(prev):(prev&&bioSum(cur)!=null?0:null)},
     {label:'охват',v:cur.length?sum(cur,'reach'):null,p:prev&&prev.length?sum(prev,'reach'):(prev?0:null)},
     {label:'вовлеченность (ER)',v:er(cur),p:prev&&prev.length?er(prev):null,pct:true}
   ];
   const w=DATA.weekly[S.net]; const lastSubs=w&&w.subs?[...w.subs].reverse().find(v=>v!=null):null;
   if(lastSubs!=null) k[0].foot='всего подписчиков: '+fmtN(lastSubs);
   k[1].foot=cur.length?cur.length+' '+plural(cur.length,'публикация','публикации','публикаций'):'';
-  { const b=bioSum(cur), n=cur.filter(p=>p.bio!=null).length;
-    k[2].foot=b==null?'столбец «клики по ссылке в био» пока пустой':(n<cur.length?'заполнено у '+n+' из '+cur.length+' публикаций':'на публикацию в среднем '+fmtN(b/n)); }
-  k[3].foot=cur.length?'в среднем '+fmtShort(sum(cur,'reach')/cur.length)+' на публикацию':'';
-  k[4].foot='лайки + комментарии + сохранения';
+  k[2].foot=cur.length?'в среднем '+fmtShort(sum(cur,'reach')/cur.length)+' на публикацию':'';
+  k[3].foot='лайки + комментарии + сохранения';
   $('kpis').innerHTML=k.map(x=>`<div class="card kpi">
       <div class="label">${x.label}</div>
       <div class="big num">${x.v==null?'—':x.pct?fmtPct(x.v):fmtN(x.v)}</div>
