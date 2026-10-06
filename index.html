@@ -94,6 +94,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .charts2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
 .mini h3{margin:0 0 2px;font-size:13px;font-weight:500;color:var(--ink-2)}
 .mini .val{font-size:22px;font-weight:650}
+.mini .vsub{font-size:12px;color:var(--muted);margin:2px 0 6px}
 svg{display:block;width:100%;height:auto;overflow:visible}
 svg text{fill:var(--muted);font-size:11px;font-family:inherit}
 
@@ -244,10 +245,10 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
 
   <section class="grid">
     <div class="card c12">
-      <div class="head"><div><h2>Рост по неделям</h2><div class="hint" id="growthHint"></div></div></div>
+      <div class="head"><div><h2>Рост подписчиков по неделям</h2><div class="hint" id="growthHint"></div></div></div>
       <div class="charts2">
-        <div class="mini"><h3>подписки за неделю</h3><div class="val num" id="gSubsVal"></div><div id="gSubs"></div></div>
-        <div class="mini"><h3>охват за неделю</h3><div class="val num" id="gReachVal"></div><div id="gReach"></div></div>
+        <div class="mini"><h3 id="gSubsTitle">новые подписчики</h3><div class="val num" id="gSubsVal"></div><div class="vsub num" id="gSubsSub"></div><div id="gSubs"></div></div>
+        <div class="mini"><h3 id="gReachTitle">охват</h3><div class="val num" id="gReachVal"></div><div class="vsub num" id="gReachSub"></div><div id="gReach"></div></div>
       </div>
     </div>
     <div class="card c4">
@@ -696,9 +697,21 @@ function areaChart(el,pts,key,color,gid){
 function renderGrowth(all){
   const {src,pts}=weeklySeries(all);
   $('growthHint').textContent=pts.length?({week:'неделя',month:'месяц',all:'все время'})[S.per]+' · источник: '+src:'нет данных по '+NET_NAME[S.net]+' в таблице';
-  const last=pts[pts.length-1];
-  $('gSubsVal').textContent=last?'+'+fmtN(last.subs):'—';
-  $('gReachVal').textContent=last?fmtN(last.reach):'—';
+  // цифры — за выбранный период: сумма, среднее за неделю и лучшая неделя
+  const per={week:'за неделю',month:'за месяц',all:'за все время'}[S.per];
+  $('gSubsTitle').textContent='новые подписчики '+per;
+  $('gReachTitle').textContent='охват '+per;
+  const tot=k=>pts.reduce((s,p)=>s+(p[k]||0),0);
+  const sub=(k,fmt)=>{ if(!pts.length) return '';
+    if(S.per==='week') return pts.length>1?'по календарным неделям: '+pts.map(p=>(p.short||p.label)+' '+fmt(p[k]||0)).join(', '):'';
+    const best=pts.reduce((a,b)=>(b[k]||0)>(a[k]||0)?b:a);
+    return pts.length>1?'в среднем '+fmt(tot(k)/pts.length)+' в неделю · лучшая неделя '+(best.short||best.label)+': '+fmt(best[k]||0)
+                       :'неделя '+(best.label||'');
+  };
+  $('gSubsVal').textContent=pts.length?'+'+fmtN(tot('subs')):'—';
+  $('gReachVal').textContent=pts.length?fmtN(tot('reach')):'—';
+  $('gSubsSub').textContent=sub('subs',v=>'+'+fmtN(v));
+  $('gReachSub').textContent=sub('reach',fmtN);
   areaChart($('gSubs'),pts,'subs','var(--accent)','ga');
   areaChart($('gReach'),pts,'reach','var(--pista)','gb');
 }
