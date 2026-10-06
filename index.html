@@ -162,6 +162,19 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
 .t-titles{font-size:12px;color:var(--ink-2);margin-top:4px;line-height:1.4}
 .t-foot{font-size:12px;color:var(--muted);margin-top:14px}
 
+/* выводы */
+.advice{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px}
+.adv h3{margin:0 0 12px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.adv h3 i{font-style:normal;width:20px;height:20px;border-radius:6px;display:inline-grid;place-items:center;font-size:12px;color:#fff;background:var(--accent)}
+.adv.dont h3 i{background:var(--muted)}
+.adv ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.adv li{font-size:14px;line-height:1.45}
+.adv li b{display:block;font-weight:600;color:var(--ink)}
+.adv li span{color:var(--ink-2);font-size:13px}
+.adv li.data b::after{content:"из ваших данных";font-size:10px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:2px;white-space:nowrap}
+.src{margin-top:18px;font-size:12px;color:var(--muted)}
+.src a{color:var(--accent)}
+
 /* план */
 .plan{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px;align-items:start}
 .plan .need{font-size:clamp(40px,6vw,56px);font-weight:700;color:var(--accent);line-height:1}
@@ -186,12 +199,13 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
 @media (max-width:1060px){
   .kpis{grid-template-columns:1fr 1fr}
 }
+@media (max-width:1060px){ .advice{grid-template-columns:1fr 1fr} }
 @media (max-width:980px){
   .c3{grid-column:span 6}.c4,.c8{grid-column:span 12}
 }
 @media (max-width:720px){
   .c3,.c4,.c6,.c8,.c12{grid-column:span 12}
-  .charts2,.plan,.tops{grid-template-columns:1fr}
+  .charts2,.plan,.tops,.advice{grid-template-columns:1fr}
   .t-list{grid-template-columns:1fr;grid-auto-flow:row;grid-template-rows:none}
   .card{padding:18px}
   .f-step,.f-conv{grid-template-columns:84px 1fr}
@@ -267,6 +281,11 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
   <section class="card">
     <div class="head"><div><h2>Планирование</h2><div class="hint">сколько сильных публикаций нужно, чтобы выйти на цель</div></div></div>
     <div id="plan"></div>
+  </section>
+
+  <section class="card">
+    <div class="head"><div><h2>Выводы и рекомендации</h2><div class="hint">по всем публикациям выбранной соцсети + практики контент-маркетинга · пересчитываются вместе с данными</div></div></div>
+    <div id="advice"></div>
   </section>
 
   <p class="foot-note" id="notes"></p>
@@ -534,6 +553,7 @@ function render(){
   renderTop(all,sl);
   renderTopics(sl.cur);
   renderPlan(all);
+  renderAdvice(all);
   const n=[];
   if(sl.from) n.push('Период «'+({week:'неделя',month:'месяц',all:'все время'})[S.per]+'» для '+net+': '+fmtDate(sl.from)+' – '+fmtDate(sl.to)+' (отсчет от последней публикации в журнале).');
   n.push('ER = (лайки + комментарии + сохранения) / охват × 100.');
@@ -770,6 +790,67 @@ function renderTop(all,{cur}){
       <div><b>${fmtPct(er([p]))}</b>ER</div>
       <div><b>+${fmtN(p.follows)}</b>подписок</div>
     </div></article>`;}).join('')+'</div>';
+}
+/* идеи тем для смысловых рубрик */
+const IDEAS={
+  'Сахар и диабет':['Гликемический индекс популярных продуктов — рейтинг 10/10','Признаки инсулинорезистентности, которые путают с усталостью','Чем заменить сахар: разбор подсластителей на полке магазина'],
+  'Похудение и вес':['Почему вес стоит на месте: 5 частых причин','Мифы о похудении, в которые верят все','Что съесть вечером, чтобы не сорваться'],
+  'Напитки и кофе':['Чай, матча, цикорий: что полезнее кофе','Сколько воды нужно на самом деле','Кофе на голодный желудок, с молоком, с сиропом — разбор на доске'],
+  'Разбор продуктов':['Разбор полки в супермаркете: что брать, что оставить','Рейтинг хлеба / сыров / мюсли 10/10','Состав «полезных» батончиков и гранолы'],
+  'Рацион и режим питания':['Что я ем за день как врач-нутрициолог','Собираем тарелку: ужин за 15 минут','Перекусы, которые не мешают худеть'],
+  'Здоровье и симптомы':['Какие анализы сдать при постоянной усталости','Дефицит железа: неочевидные признаки','Что питание меняет в коже и волосах']
+};
+function renderAdvice(all){
+  const el=$('advice');
+  if(all.length<3){el.innerHTML='<div class="empty-note">нужно хотя бы 3 публикации по '+NET_NAME[S.net]+', чтобы сделать выводы</div>';return;}
+  const statsBy=fn=>{const g={};all.forEach(p=>{const k=fn(p);if(k)(g[k]=g[k]||[]).push(p);});
+    return Object.entries(g).map(([k,ps])=>({k,n:ps.length,reach:sum(ps,'reach'),medReach:median(ps.map(p=>p.reach)),
+      fpp:sum(ps,'follows')/ps.length,sends:sum(ps,'reposts')/Math.max(1,sum(ps,'reach'))*100,er:er(ps)}));};
+  const pct=v=>fmtPct(v,v<1?2:1);
+  const plf=n=>plural(Math.round(n),'подписка','подписки','подписок');
+  // темы
+  const th=statsBy(themeOf).filter(t=>t.k!=='Другое');
+  const thSure=th.filter(t=>t.n>=2); // выводы только по темам, где есть хотя бы 2 публикации
+  const byF=[...thSure].sort((a,b)=>b.fpp-a.fpp), bySend=[...thSure].sort((a,b)=>b.sends-a.sends);
+  const tried=new Set(th.map(t=>t.k)); const untried=THEMES.map(t=>t[0]).filter(k=>!tried.has(k));
+  const T=[];
+  if(byF[0]) T.push(['data','Развивать «'+byF[0].k+'»','в среднем +'+fmtN(byF[0].fpp)+' '+plf(byF[0].fpp)+' с публикации — лучший результат среди тем. Сделайте серию: '+(IDEAS[byF[0].k]||[]).slice(0,2).map(x=>'«'+x+'»').join(', ')+'.']);
+  if(bySend[0]&&bySend[0]!==byF[0]) T.push(['data','Больше «'+bySend[0].k+'»','лучшая доля репостов: '+pct(bySend[0].sends)+' от охвата. Репосты в личку — главный сигнал Instagram для показа новым людям. Идея: «'+(IDEAS[bySend[0].k]||[''])[0]+'».']);
+  else if(byF[1]) T.push(['data','Поддерживать «'+byF[1].k+'»','второе место по подпискам: +'+fmtN(byF[1].fpp)+' с публикации. Идея: «'+(IDEAS[byF[1].k]||[''])[0]+'».']);
+  untried.slice(0,1).forEach(k=>T.push(['','Попробовать «'+k+'»','этой темы еще не было. Начните с 2–3 публикаций: '+(IDEAS[k]||[]).slice(0,2).map(x=>'«'+x+'»').join(', ')+'.']));
+  const topPost=[...all].sort((a,b)=>b.reach-a.reach)[0];
+  if(/непра/i.test(topPost.topic)) T.push(['data','Формат «разоблачение ошибки»','заголовок вида «Вы … неправильно» дал ваш самый большой охват. Переносите эту формулу на другие темы: «Вы неправильно едите фрукты», «Вы неправильно пьете воду».']);
+  // форматы
+  const cr=statsBy(p=>{const k=p.crea.toLowerCase().replace(/[\d\/.,]+/g,' ').replace(/\s+/g,' ').trim();return k?k.charAt(0).toUpperCase()+k.slice(1):'';});
+  const crSure=cr.filter(c=>c.n>=3).sort((a,b)=>b.medReach-a.medReach);
+  const F=[];
+  if(crSure[0]) F.push(['data','Подача «'+crSure[0].k+'» — основная','самый высокий медианный охват: '+fmtN(crSure[0].medReach)+' ('+crSure[0].n+' публ.). Медиана не зависит от одного вирусного ролика, поэтому это надежнее среднего.']);
+  const st=cr.find(c=>/стикер/i.test(c.k)); if(st&&st!==crSure[0]) F.push(['data','«'+st.k+'» — для вовлечения','ER '+pct(st.er)+', но охват ниже. Хороши для общения с текущими подписчиками, хуже для роста.']);
+  const posts=all.filter(p=>p.fmt==='posts'), reels=all.filter(p=>p.fmt==='reels');
+  if(posts.length&&reels.length) F.push(['data','Карусели — для прогрева, рилс — для охвата','карусель: ER '+pct(er(posts))+' при охвате '+fmtN(median(posts.map(p=>p.reach)))+'; рилс: медиана охвата '+fmtN(median(reels.map(p=>p.reach)))+'. Делайте карусели-чек-листы, которые сохраняют и пересылают.']);
+  if(!all.some(p=>p.fmt==='stories')) F.push(['','Добавить stories','их пока нет в журнале. Stories видят уже подписанные: опросы, ответы на вопросы и «что я ем сегодня» превращают подписчиков в клиентов.']);
+  // что делать
+  const key=t=>t.toLowerCase().replace(/\([^)]*\)/g,' ').replace(/(^|\s)повтор(?=\s|$)/g,' ').replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+  const rep=all.find(p=>/(^|\s)повтор(\s|$)/i.test(p.topic)); const orig=rep&&all.find(p=>p!==rep&&key(p.topic)===key(rep.topic)&&p.date<=rep.date);
+  const ctr=sum(all,'clicks')/Math.max(1,sum(all,'reach'))*100;
+  const D=[];
+  if(rep&&orig) D.push(['data','Перезапускать лучшие ролики','повтор «'+(k=>k.charAt(0).toUpperCase()+k.slice(1))(key(rep.topic))+'» собрал охват в '+fmtN(rep.reach/Math.max(1,orig.reach))+' раз больше оригинала. Через 2–4 недели выпускайте удачный ролик заново с новым первым кадром.']);
+  D.push(['','Цеплять в первые 1–2 секунды','время просмотра — главный сигнал Instagram. Тезис или спорное утверждение в первом кадре и тексте на экране, без долгих вступлений.']);
+  D.push(['','Делать контент «для пересылки»','рейтинги, чек-листы, «скинь тому, кто пьет кофе натощак». Прямой призыв переслать поднимает долю репостов.']);
+  D.push([ctr<0.5?'data':'','Один понятный призыв в конце',(ctr<0.5?'по ссылке переходят '+pct(ctr)+' охвата — это мало. ':'')+'Один призыв на публикацию: «напиши ГАЙД в директ» или «ссылка на консультацию в профиле», а не всё сразу.']);
+  if(!DATA.weekly.total||!(DATA.weekly.total.leads||[]).some(v=>v!=null)) D.push(['data','Начать считать заявки и продажи','воронка обрывается на переходах. Без заявок не видно, какие темы приводят клиентов, а не только подписчиков.']);
+  // чего не делать
+  const low=[...thSure].sort((a,b)=>a.medReach-b.medReach)[0];
+  const weak=thSure.length>2&&low!==byF[0]&&low!==bySend[0]?low:null; // только настоящий аутсайдер, который мы не советуем развивать
+  const N=[];
+  N.push(['data','Делать выводы по одному ролику','у '+cr.filter(c=>c.n<3).length+' из '+cr.length+' подач меньше 3 публикаций. Тестируйте каждую идею хотя бы 3 раза, прежде чем отказываться.']);
+  if(weak) N.push(['data','Повторять «'+weak.k+'» в той же подаче','самый низкий охват среди тем: '+fmtN(weak.medReach)+'. Попробуйте ее через рилс-разоблачение или рейтинг, а не отказывайтесь от темы сразу.']);
+  N.push(['','Выкладывать ролики с водяным знаком TikTok','Instagram понижает в показах переопубликованный и чужой контент. Загружайте исходник.']);
+  N.push(['','Гнаться за трендами вне экспертизы','охват от танцев и мемов не превращается в клиентов нутрициолога. Тренд — только если он про питание.']);
+  N.push(['','Обещать результат и ставить диагнозы','«минус 10 кг за месяц», «вылечит диабет» — подрывает доверие к врачу и рискованно юридически. Говорите «может помочь», «обсудите с врачом».']);
+  const col=(cls,ico,title,items)=>'<div class="adv '+cls+'"><h3><i>'+ico+'</i>'+title+'</h3><ul>'+items.map(([d,b,t])=>'<li class="'+d+'"><b>'+esc(b)+'</b><span>'+esc(t)+'</span></li>').join('')+'</ul></div>';
+  el.innerHTML='<div class="advice">'+col('','✦','Какие темы взять',T)+col('','▶','Какие форматы',F)+col('','✓','Что делать',D)+col('dont','✕','Чего не делать',N)+'</div>'+
+    '<div class="src">Сигналы ранжирования Instagram (время просмотра, лайки и пересылки на охват) — по словам главы Instagram Адама Моссери, январь 2025: <a href="https://www.socialmediatoday.com/news/instagram-shares-algorithm-insights-2025/738034/" target="_blank" rel="noopener">Social Media Today</a>. Пометка «из ваших данных» — вывод посчитан по таблице.</div>';
 }
 function renderPlan(all){
   const el=$('plan');
