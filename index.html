@@ -91,10 +91,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .kpi .foot{margin-top:4px;font-size:12px;color:var(--muted)}
 
 /* графики */
-.charts2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.mini h3{margin:0 0 2px;font-size:13px;font-weight:500;color:var(--ink-2)}
-.mini .val{font-size:22px;font-weight:650}
-.mini .vsub{font-size:12px;color:var(--muted);margin:2px 0 6px}
+.g-total{text-align:right}
+.g-total .val{font-size:clamp(26px,3vw,32px);font-weight:700;color:var(--accent);line-height:1.1}
+.g-total .vsub{font-size:12px;color:var(--muted);margin-top:2px}
 svg{display:block;width:100%;height:auto;overflow:visible}
 svg text{fill:var(--muted);font-size:11px;font-family:inherit}
 
@@ -209,7 +208,8 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
 }
 @media (max-width:720px){
   .c3,.c4,.c6,.c8,.c12{grid-column:span 12}
-  .charts2,.plan,.tops,.advice{grid-template-columns:1fr}
+  .plan,.tops,.advice{grid-template-columns:1fr}
+  .g-total{text-align:left}
   .t-list{grid-template-columns:1fr;grid-auto-flow:row;grid-template-rows:none}
   .card{padding:18px}
   .f-step,.f-conv{grid-template-columns:84px 1fr}
@@ -245,10 +245,9 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
 
   <section class="grid">
     <div class="card c12">
-      <div class="head"><div><h2>Рост подписчиков по неделям</h2><div class="hint" id="growthHint"></div></div></div>
-      <div class="charts2">
-        <div class="mini"><h3 id="gSubsTitle">новые подписчики</h3><div class="val num" id="gSubsVal"></div><div class="vsub num" id="gSubsSub"></div><div id="gSubs"></div></div>
-        <div class="mini"><h3 id="gReachTitle">охват</h3><div class="val num" id="gReachVal"></div><div class="vsub num" id="gReachSub"></div><div id="gReach"></div></div>
+      <div class="head"><div><h2>Рост подписчиков</h2><div class="hint" id="growthHint"></div></div>
+        <div class="g-total"><div class="val num" id="gSubsVal"></div><div class="vsub num" id="gSubsSub"></div></div></div>
+      <div id="gSubs"></div>
       </div>
     </div>
     <div class="card c4">
@@ -586,7 +585,7 @@ function render(){
   document.querySelectorAll('#perSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.per===S.per));
   renderPubs(all);
   renderKPI(all,sl);
-  renderGrowth(sl.cur);
+  renderGrowth(sl.cur,sl);
   renderMix(sl.cur);
   renderCreative(sl.cur);
   renderFormats(sl.cur);
@@ -639,26 +638,6 @@ function renderKPI(all,{cur,prev}){
       <div class="foot">${x.foot||''}</div></div>`).join('');
 }
 
-/* недельные ряды: из листа «Еженедельная статистика», если заполнен; иначе — из журнала публикаций */
-function weeklySeries(all){
-  const w=DATA.weekly[S.net]||{};
-  const filled=a=>a&&a.filter(v=>v!=null).length>=2;
-  if(filled(w.gain)||filled(w.reach)){
-    const labels=DATA.weekly.labels;
-    const idx=labels.map((_,i)=>i).filter(i=>(w.gain&&w.gain[i]!=null)||(w.reach&&w.reach[i]!=null));
-    return {src:'лист «Еженедельная статистика»',pts:idx.map(i=>({label:labels[i],subs:w.gain?w.gain[i]:null,reach:w.reach?w.reach[i]:null}))};
-  }
-  if(!all.length) return {src:'',pts:[]};
-  const monday=d=>{const x=new Date(d);x.setDate(x.getDate()-((x.getDay()+6)%7));x.setHours(0,0,0,0);return x;};
-  const start=monday(all[0].date), end=monday(all[all.length-1].date);
-  const pts=[];
-  for(let t=new Date(start);t<=end;t=new Date(+t+7*DAY)){
-    const e=new Date(+t+6*DAY);
-    const ps=all.filter(p=>p.date>=t&&p.date<=new Date(+e+DAY-1));
-    pts.push({label:fmtDay(t)+' – '+fmtDay(e),short:t.getDate()+'.'+String(t.getMonth()+1).padStart(2,'0'),subs:sum(ps,'follows'),reach:sum(ps,'reach'),n:ps.length});
-  }
-  return {src:'журнал публикаций, по календарным неделям',pts};
-}
 function smoothPath(P){
   if(P.length<2) return '';
   let d='M'+P[0][0]+','+P[0][1];
@@ -672,48 +651,43 @@ function smoothPath(P){
   return d;
 }
 function niceMax(v){if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));const f=v/e;return (f<=1?1:f<=2?2:f<=5?5:10)*e;}
-function areaChart(el,pts,key,color,gid){
-  if(!pts.length){el.innerHTML='<div class="empty-note">нет данных</div>';return;}
-  const W=560,H=190,L=44,R=12,T=12,B=26;
-  const max=niceMax(Math.max(...pts.map(p=>p[key]||0)));
-  const x=i=>pts.length===1?L+(W-L-R)/2:L+i*(W-L-R)/(pts.length-1);
-  const y=v=>T+(H-T-B)*(1-(v||0)/max);
-  const P=pts.map((p,i)=>[x(i),y(p[key])]);
-  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key==='subs'?'подписки':'охват'} по неделям">`;
-  s+=`<defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>`;
-  for(let i=0;i<=2;i++){const v=max*i/2,yy=y(v);s+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/><text x="${L-6}" y="${yy+4}" text-anchor="end">${fmtShort(v)}</text>`;}
-  const every=Math.ceil(pts.length/6);
-  pts.forEach((p,i)=>{ if(i%every===0||i===pts.length-1) s+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${esc(p.short||p.label.replace(/Неделя\s*/,'н'))}</text>`;});
-  if(P.length>1){
-    const line=smoothPath(P);
-    s+=`<path d="${line} L${P[P.length-1][0]},${y(0)} L${P[0][0]},${y(0)} Z" fill="url(#${gid})"/>`;
-    s+=`<path d="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`;
+/* Рост подписчиков: накопительная сумма «Подписок с публикации» по дням выбранного периода */
+function renderGrowth(cur,{from,to}){
+  const el=$('gSubs'), per={week:'за неделю',month:'за месяц',all:'за все время'}[S.per];
+  if(!cur.length||!from){
+    $('growthHint').textContent='нет публикаций '+per;
+    $('gSubsVal').textContent='—'; $('gSubsSub').textContent='';
+    el.innerHTML='<div class="empty-note">нет данных за период</div>'; return;
   }
-  P.forEach((q,i)=>{const last=i===P.length-1;s+=`<circle cx="${q[0]}" cy="${q[1]}" r="${last?5:3.5}" fill="${last?color:'var(--card)'}" stroke="${color}" stroke-width="2"/>`;});
-  const cw=(W-L-R)/Math.max(1,pts.length-1);
-  pts.forEach((p,i)=>{s+=`<rect x="${x(i)-cw/2}" y="${T}" width="${cw}" height="${H-T-B}" fill="transparent" data-tip="${esc(p.label)}: ${fmtN(p[key])}${p.n!=null?' · '+p.n+' публ.':''}"/>`;});
-  el.innerHTML=s+'</svg>';
-}
-function renderGrowth(all){
-  const {src,pts}=weeklySeries(all);
-  $('growthHint').textContent=pts.length?({week:'неделя',month:'месяц',all:'все время'})[S.per]+' · источник: '+src:'нет данных по '+NET_NAME[S.net]+' в таблице';
-  // цифры — за выбранный период: сумма, среднее за неделю и лучшая неделя
-  const per={week:'за неделю',month:'за месяц',all:'за все время'}[S.per];
-  $('gSubsTitle').textContent='новые подписчики '+per;
-  $('gReachTitle').textContent='охват '+per;
-  const tot=k=>pts.reduce((s,p)=>s+(p[k]||0),0);
-  const sub=(k,fmt)=>{ if(!pts.length) return '';
-    if(S.per==='week') return pts.length>1?'по календарным неделям: '+pts.map(p=>(p.short||p.label)+' '+fmt(p[k]||0)).join(', '):'';
-    const best=pts.reduce((a,b)=>(b[k]||0)>(a[k]||0)?b:a);
-    return pts.length>1?'в среднем '+fmt(tot(k)/pts.length)+' в неделю · лучшая неделя '+(best.short||best.label)+': '+fmt(best[k]||0)
-                       :'неделя '+(best.label||'');
-  };
-  $('gSubsVal').textContent=pts.length?'+'+fmtN(tot('subs')):'—';
-  $('gReachVal').textContent=pts.length?fmtN(tot('reach')):'—';
-  $('gSubsSub').textContent=sub('subs',v=>'+'+fmtN(v));
-  $('gReachSub').textContent=sub('reach',fmtN);
-  areaChart($('gSubs'),pts,'subs','var(--accent)','ga');
-  areaChart($('gReach'),pts,'reach','var(--pista)','gb');
+  const d0=new Date(from); d0.setHours(0,0,0,0);
+  const days=Math.round((+to-d0)/DAY)+1, pts=[]; let acc=0;
+  for(let i=0;i<days;i++){
+    const d=new Date(+d0+i*DAY), ps=cur.filter(p=>Math.round((p.date-d0)/DAY)===i), add=sum(ps,'follows');
+    acc+=add; pts.push({d,add,acc,n:ps.length});
+  }
+  $('growthHint').textContent=per+' · '+fmtDate(d0)+' – '+fmtDate(to)+' · накопительно по дням, столбец «Подписки с публикации»';
+  $('gSubsVal').textContent='+'+fmtN(acc);
+  const best=pts.reduce((a,b)=>b.add>a.add?b:a);
+  $('gSubsSub').textContent='новых подписчиков '+per+(best.add>0?' · лучший день '+fmtDay(best.d)+': +'+fmtN(best.add):'');
+  // график
+  // размер под ширину карточки, чтобы подписи не мельчали на телефоне
+  const W=Math.max(300,Math.round(el.clientWidth||900)), H=W<560?200:240, L=44,R=14,T=14,B=28;
+  const max=(v=>{if(v<=0)return 1;const e=Math.pow(10,Math.floor(Math.log10(v)));return [1,1.2,1.5,2,2.5,3,4,5,6,8,10].find(f=>f*e>=v)*e;})(acc);
+  const x=i=>days===1?L+(W-L-R)/2:L+i*(W-L-R)/(days-1), y=v=>T+(H-T-B)*(1-v/max);
+  const P=pts.map((p,i)=>[x(i),y(p.acc)]);
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="рост подписчиков ${per}: +${fmtN(acc)}"><defs><linearGradient id="gGrow" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>`;
+  // число делений, при котором шаг шкалы круглый: 500, 200, 250, 10…
+  const div=[4,5,3,2].find(k=>{const st=max/k,m=st/Math.pow(10,Math.floor(Math.log10(st)));return [1,2,2.5,5].some(n=>Math.abs(m-n)<1e-9);})||4;
+  for(let k=0;k<=div;k++){const v=max*k/div,yy=y(v);g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--grid)"/><text x="${L-8}" y="${yy+4}" text-anchor="end">${fmtShort(v)}</text>`;}
+  const ticks=Math.min(days,W<560?4:7), step=(days-1)/Math.max(1,ticks-1);
+  for(let k=0;k<ticks;k++){const i=Math.round(k*step);g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${pts[i].d.getDate()}.${String(pts[i].d.getMonth()+1).padStart(2,'0')}</text>`;}
+  if(P.length>1){const line=smoothPath(P);
+    g+=`<path d="${line} L${P[P.length-1][0]},${y(0)} L${P[0][0]},${y(0)} Z" fill="url(#gGrow)"/><path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>`;}
+  pts.forEach((p,i)=>{ if(p.n&&i!==days-1) g+=`<circle cx="${P[i][0]}" cy="${P[i][1]}" r="3.5" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>`;});
+  g+=`<circle cx="${P[days-1][0]}" cy="${P[days-1][1]}" r="5.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>`;
+  const cw=(W-L-R)/Math.max(1,days-1);
+  pts.forEach((p,i)=>{g+=`<rect x="${x(i)-cw/2}" y="${T}" width="${cw}" height="${H-T-B}" fill="transparent" data-tip="${fmtDay(p.d)}: ${p.add?'+'+fmtN(p.add)+' за день · ':''}всего +${fmtN(p.acc)}${p.n?' · '+p.n+' публ.':''}"/>`;});
+  el.innerHTML=g+'</svg>';
 }
 function renderMix(cur){
   const el=$('mix'); const keys=['reels','posts','stories'];
@@ -1027,6 +1001,7 @@ $('netSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!
 $('pubs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.per=b.dataset.per;save();render();});
 $('perSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.per=b.dataset.per;save();render();});
 $('refresh').addEventListener('click',refresh);
+let rsz; addEventListener('resize',()=>{clearTimeout(rsz);rsz=setTimeout(render,150);});
 const tip=$('tip');
 document.addEventListener('pointermove',e=>{
   const t=e.target.closest&&e.target.closest('[data-tip]');
