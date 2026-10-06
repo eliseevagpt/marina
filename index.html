@@ -50,6 +50,7 @@ header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-be
 h1{margin:0;font-size:clamp(22px,3.2vw,30px);font-weight:700;letter-spacing:.04em;text-wrap:balance}
 .sub{margin-top:4px;color:var(--muted);font-size:14px}
 .sub b{color:var(--ink-2);font-weight:500}
+#refreshNote:not(:empty)::before{content:"· "}
 .pubs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .pubs span{font-size:13px;color:var(--ink-2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
 .pubs b{font-size:15px;color:var(--ink);font-weight:650;margin-right:4px}
@@ -220,7 +221,7 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
   <header>
     <div>
       <h1>МАРИНА, НУТРИЦИОЛОГ, ВРАЧ</h1>
-      <div class="sub">аналитика соцсетей · <b id="updated">обновлено сегодня</b></div>
+      <div class="sub">аналитика соцсетей · <b id="updated">обновлено сегодня</b> <span id="refreshNote" role="status"></span></div>
       <div class="pubs num" id="pubs" aria-label="Количество публикаций"></div>
     </div>
     <div class="controls">
@@ -897,16 +898,65 @@ async function fetchText(url){
   try{ const r=await fetch(url,{signal:ctl.signal,cache:'no-store'}); if(!r.ok) throw 0; const tx=await r.text(); if(/^\s*</.test(tx)) throw 0; return tx; }
   finally{ clearTimeout(t); }
 }
-async function refresh(){
-  const b=$('refresh'); b.disabled=true; b.textContent='обновляю…';
+/* Ответ коннектора Google Drive (read_file_content): текст, где каждый лист —
+   «### Sheet Name: …» и таблица в markdown. Превращаем каждый лист в CSV для тех же парсеров. */
+function sheetsFromDrive(text){
+  const out={};
+  String(text).split(/^### Sheet Name:\s*/m).slice(1).forEach(part=>{
+    const name=part.split('\n')[0].trim().toLowerCase();
+    const lines=part.split('\n').filter(l=>/^\s*\|/.test(l));
+    const rows=lines.map(l=>l.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim()))
+      .filter(r=>!r.every(c=>/^:?-+:?$/.test(c)||c===''));
+    const csv=rows.map(r=>r.map(c=>/[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c).join(',')).join('\n');
+    const key=Object.keys(CONFIG.sheetNames).find(k=>CONFIG.sheetNames[k].toLowerCase()===name);
+    if(key) out[key]=csv;
+  });
+  return out;
+}
+const DRIVE='Google Drive';
+async function fromDrive(){
+  if(!window.claude||typeof window.claude.use!=='function') return {skip:true};
+  const mcp=await window.claude.use('mcp');
+  if(!mcp) return {skip:true};
   try{
-    const [weekly,content,goals]=await Promise.all(['weekly','content','goals'].map(k=>fetchText(sheetUrl(k)).catch(()=>null)));
-    if(content){
+    const res=await mcp.callTool(DRIVE,'read_file_content',{fileId:CONFIG.sheetId},{cache:false});
+    const p=res.payload; const text=p&&typeof p==='object'?p.fileContent:p;
+    const sh=sheetsFromDrive(text||'');
+    return sh.content?{data:sh}:{note:'в ответе Google Drive не нашелся лист «Контент»'};
+  }catch(e){
+    const code=e&&e.code;
+    const notes={
+      needs_reauth:'переподключите Google Drive: claude.ai → Настройки → Коннекторы',
+      server_not_connected:'подключите Google Drive: claude.ai → Настройки → Коннекторы',
+      selection_required:'выберите аккаунт Google Drive в окне claude.ai и нажмите «обновить» еще раз',
+      not_in_manifest:'доступ к Google Drive для этой страницы не разрешен',
+      consent_required:'разрешите доступ к Google Drive и нажмите «обновить» еще раз',
+      blocked_by_policy:'Google Drive запрещен настройками организации',
+      server_unavailable:'Google Drive не ответил, попробуйте через минуту',
+      tool_error:'Google Drive не смог прочитать таблицу: '+((e&&e.message)||'')
+    };
+    return {note:notes[code]||'Google Drive недоступен'};
+  }
+}
+async function fromWeb(){
+  const [weekly,content,goals]=await Promise.all(['weekly','content','goals'].map(k=>fetchText(sheetUrl(k)).catch(()=>null)));
+  return content?{data:{weekly,content,goals}}:null;
+}
+async function refresh(){
+  const b=$('refresh'), note=$('refreshNote'); b.disabled=true; b.textContent='обновляю…'; note.textContent='';
+  try{
+    let r=await fromDrive();
+    if(!r.data){ const w=await fromWeb(); if(w) r=w; }
+    if(r.data){
       const today=new Date(); const iso=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-      load({content,weekly:weekly||SNAPSHOT.weekly,goals:goals||SNAPSHOT.goals,date:iso});
+      load({content:r.data.content,weekly:r.data.weekly||SNAPSHOT.weekly,goals:r.data.goals||SNAPSHOT.goals,date:iso});
       render(); setUpdated(true);
+      const n=DATA.content.filter(p=>p.net===S.net).length;
+      note.textContent='данные из таблицы, '+n+' '+plural(n,'публикация','публикации','публикаций');
+    } else {
+      // вшитые цифры остаются на экране; коротко говорим, почему свежих нет
+      note.textContent=(r.note||'таблица сейчас недоступна')+' · показаны данные от '+SNAPSHOT.date.split('-').reverse().join('.');
     }
-    // если таблица недоступна — молча остаемся на вшитых цифрах
   } finally { b.disabled=false; b.textContent='↻ обновить'; }
 }
 function setUpdated(now){
