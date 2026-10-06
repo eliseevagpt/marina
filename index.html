@@ -159,6 +159,7 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
 .t-row .fill{background:var(--muted);opacity:.45}
 .t-row.lead .fill{background:var(--accent);opacity:1}
 .t-row .meta{font-size:12px;color:var(--muted);margin-top:3px}
+.t-titles{font-size:12px;color:var(--ink-2);margin-top:4px;line-height:1.4}
 .t-foot{font-size:12px;color:var(--muted);margin-top:14px}
 
 /* план */
@@ -259,7 +260,7 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
   </section>
 
   <section class="card">
-    <div class="head"><div><h2>Топ-10 тем</h2><div class="hint">самые популярные темы по суммарному охвату за период · публикации с одинаковым названием (без пометок в скобках и слова «повтор») считаются одной темой</div></div></div>
+    <div class="head"><div><h2>Топ-10 тем</h2><div class="hint">смысловые темы по суммарному охвату за период · тема определяется по ключевым словам в заголовке или по столбцу «Рубрика», если он заполнен</div></div></div>
     <div id="topics"></div>
   </section>
 
@@ -400,14 +401,14 @@ function parseContent(text){
   const h=rows[0].map(x=>x.toLowerCase());
   const col=k=>h.findIndex(x=>x.includes(k));
   const I={crea:h.findIndex((x,i)=>x.includes('формат')&&i!==h.findIndex(y=>y.includes('формат'))),date:col('дата'),net:col('соцсет'),fmt:col('формат'),topic:col('тема'),reach:col('охват'),views:col('просмотр'),
-    likes:col('лайк'),comments:col('коммент'),reposts:col('репост'),saves:col('сохран'),follows:col('подписк'),clicks:col('переход')};
+    likes:col('лайк'),comments:col('коммент'),reposts:col('репост'),saves:col('сохран'),follows:col('подписк'),clicks:col('переход'),rubric:h.findIndex(x=>/рубрик|смысл/.test(x))};
   const out=[];
   for(const r of rows.slice(1)){
     const net=netOf(r[I.net]); const date=parseDate(r[I.date]); const reach=num(r[I.reach]);
     if(!net||!date||reach==null) continue;
     const g=k=>I[k]<0?0:(num(r[I[k]])||0);
     out.push({date,net,fmt:fmtOf(r[I.fmt]),fmtRaw:r[I.fmt]||'',crea:I.crea<0?'':(r[I.crea]||''),topic:r[I.topic]||'Без темы',reach,
-      views:g('views'),likes:g('likes'),comments:g('comments'),reposts:g('reposts'),saves:g('saves'),follows:g('follows'),clicks:g('clicks')});
+      views:g('views'),likes:g('likes'),comments:g('comments'),reposts:g('reposts'),saves:g('saves'),follows:g('follows'),clicks:g('clicks'),rubric:I.rubric<0?'':(r[I.rubric]||'').trim()});
   }
   return out.sort((a,b)=>a.date-b.date);
 }
@@ -472,6 +473,22 @@ const FMT={
   ig:{reels:'Рилс',posts:'Посты',stories:'Stories'},
   yt:{reels:'Shorts',posts:'Видео',stories:'Сообщество'}
 };
+/* Смысловые темы: публикация попадает в первую тему, корень слова из которой есть в заголовке.
+   Чтобы поправить группировку — допишите корни сюда или заполните в таблице столбец «Рубрика». */
+const THEMES=[
+  ['Сахар и диабет',      ['диабет','сахар','подсласт','сладк','инсулин','глюкоз','десерт']],
+  ['Похудение и вес',     ['худе','похуд','вес','калор','жир','талия','аппетит']],
+  ['Напитки и кофе',      ['кофе','чай','напит','вода','воду','сок','алкогол','смузи']],
+  ['Разбор продуктов',    ['йогурт','фрукт','овощ','молоч','сыр','хлеб','мяс','рыб','яйц','круп','орех','продукт','каш']],
+  ['Рацион и режим питания',['ужин','завтрак','обед','перекус','рацион','меню','тарелк','голод','режим','интервальн']],
+  ['Здоровье и симптомы', ['симптом','состояни','анализ','витамин','дефицит','кишеч','желуд','гормон','щитовид','кожа','волос','усталост','сон ']]
+];
+function themeOf(p){
+  if(p.rubric) return p.rubric.charAt(0).toUpperCase()+p.rubric.slice(1).toLowerCase();
+  const t=' '+p.topic.toLowerCase().replace(/ё/g,'е')+' ';
+  for(const [name,roots] of THEMES) if(roots.some(r=>t.includes(r))) return name;
+  return 'Другое';
+}
 const FMT_COLOR={reels:'var(--accent)',posts:'var(--pista)',stories:'var(--blue)'};
 const NET_NAME={ig:'Инстаграм',yt:'YouTube'};
 const PER_DAYS={week:7,month:30};
@@ -713,26 +730,23 @@ function renderFunnel(cur){
   el.innerHTML=h+'</div>';
 }
 // тема без пометок: «Вы пьете кофе (формат доска) повтор» → «вы пьете кофе»
-function topicKey(t){
-  return t.toLowerCase().replace(/ё/g,'е').replace(/\([^)]*\)/g,' ').replace(/(^|\s)повтор(?=\s|$)/g,' ')
-    .replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
-}
 function renderTopics(cur){
   const el=$('topics');
   if(!cur.length){el.innerHTML='<div class="empty-note">нет публикаций за период</div>';return;}
   const groups={};
-  cur.forEach(p=>{const k=topicKey(p.topic)||'без темы';(groups[k]=groups[k]||[]).push(p);});
-  const rows=Object.entries(groups).map(([k,ps])=>{
-    const raw=ps.map(p=>p.topic.replace(/\([^)]*\)/g,'').replace(/(^|\s)повтор(?=\s|$)/gi,' ').replace(/\s+/g,' ').trim()).sort((a,b)=>a.length-b.length)[0]||k;
-    return {label:raw.charAt(0).toUpperCase()+raw.slice(1),n:ps.length,reach:sum(ps,'reach'),follows:sum(ps,'follows'),er:er(ps)};
-  }).sort((a,b)=>b.reach-a.reach);
+  cur.forEach(p=>{const k=themeOf(p);(groups[k]=groups[k]||[]).push(p);});
+  const short=t=>{t=t.replace(/\([^)]*\)/g,'').replace(/(^|\s)повтор(?=\s|$)/gi,' ').replace(/\s+/g,' ').trim();t=t.charAt(0).toUpperCase()+t.slice(1);return t.length>38?t.slice(0,36).trim()+'…':t;};
+  const rows=Object.entries(groups).map(([k,ps])=>({label:k,n:ps.length,reach:sum(ps,'reach'),follows:sum(ps,'follows'),er:er(ps),
+    titles:[...new Set([...ps].sort((a,b)=>b.reach-a.reach).map(p=>short(p.topic)))]}))
+    .sort((a,b)=>b.reach-a.reach);
   const top=rows.slice(0,10), max=top[0].reach||1, total=rows.reduce((s,r)=>s+r.reach,0)||1;
   const pl=n=>plural(n,'подписка','подписки','подписок');
   let h=`<div class="t-list" style="--rows:${Math.ceil(top.length/2)}">`+top.map((r,i)=>`<div class="t-row${i===0?' lead':''}">
       <span class="t-rank num">${i+1}</span>
       <div><div class="top"><span>${esc(r.label)}</span><span class="num">${fmtN(r.reach)}</span></div>
       <div class="track"><div class="fill" style="width:${Math.max(r.reach/max*100,1)}%" data-tip="${esc(r.label)}: охват ${fmtN(r.reach)} · ${fmtN(r.reach/total*100)}% всего охвата"></div></div>
-      <div class="meta num">${r.n} ${plural(r.n,'публикация','публикации','публикаций')} · +${fmtN(r.follows)} ${pl(r.follows)} · ER ${fmtPct(r.er)}</div></div></div>`).join('')+'</div>';
+      <div class="meta num">${r.n} ${plural(r.n,'публикация','публикации','публикаций')} · +${fmtN(r.follows)} ${pl(r.follows)} · ER ${fmtPct(r.er)}</div>
+      <div class="t-titles">${r.titles.map(esc).join(' · ')}</div></div></div>`).join('')+'</div>';
   if(top.length>1){
     const best=k=>top.reduce((a,b)=>(b[k]??-1)>(a[k]??-1)?b:a);
     const bf=best('follows'), be=best('er');
