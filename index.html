@@ -148,12 +148,23 @@ table.cr .n{display:block;font-size:12px;color:var(--muted)}
 .pill.normal{background:var(--track);color:var(--ink-2)}
 .pill.trial{background:transparent;color:var(--blue);border:1px solid var(--blue)}
 .post .pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.tr-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}
-.tr-sum div{font-size:12px;color:var(--muted)}
-.tr-sum b{display:block;font-size:22px;font-weight:650;color:var(--ink)}
+.tr-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:24px}
+.tr-sum>div{background:var(--bg);border-radius:14px;padding:14px 16px;font-size:12px;color:var(--muted)}
+.tr-sum b{display:block;font-size:24px;font-weight:650;color:var(--ink);margin-bottom:2px}
+.tr-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:28px;align-items:start}
+.tr-grid h3{margin:0 0 12px;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.tr-fmt{display:flex;flex-direction:column;gap:12px}
+.tr-fmt .fill{background:var(--blue)}
+.tr-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tr-top .post{padding:14px}
+.tr-top .stats b.sm{font-size:14px;line-height:1.3;padding-top:3px}
+.tr-top .rank{font-size:12px;font-weight:700;color:var(--blue)}
+details.tr-all{margin-top:20px}
+details.tr-all summary{cursor:pointer;font-size:14px;color:var(--accent);margin-bottom:12px}
 table.cr td.note{white-space:normal;text-align:left;color:var(--ink-2);font-size:13px;min-width:180px}
 table.cr th.l{text-align:left}
-@media (max-width:720px){.tr-sum{grid-template-columns:1fr 1fr}}
+@media (max-width:1060px){.tr-grid{grid-template-columns:1fr}}
+@media (max-width:720px){.tr-sum{grid-template-columns:1fr 1fr}.tr-top{grid-template-columns:1fr}}
 .post .topic{font-size:15px;font-weight:500;line-height:1.35}
 .post .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 12px;margin-top:auto}
 .post .stats div{font-size:12px;color:var(--muted)}
@@ -789,20 +800,45 @@ function renderTrial(cur,all){
   const el=$('trial'), tr=cur.filter(p=>p.trial), ever=all.filter(p=>p.trial);
   const per={week:'за неделю',month:'за месяц',all:'за все время'}[S.per];
   if(!tr.length){el.innerHTML='<div class="empty-note">'+per+' пробных рилс нет'+(ever.length?' · всего '+ever.length+' — выберите «за все время»':' · отметьте ролик словами «пробный режим» в столбце «Вывод»')+'</div>';return;}
-  const share=(k)=>{const t=sum(cur,k);return t?fmtPct(sum(tr,k)/t*100,1):'—';};
-  const pl=n=>plural(n,'ролик','ролика','роликов');
+  const share=k=>{const t=sum(cur,k);return t?fmtPct(sum(tr,k)/t*100,1):'—';};
+  const pl=(n,a,b,c)=>plural(n,a,b,c);
   // при охвате меньше 100 ER — случайное число (1 лайк на 1 охват = 100%), не показываем
   const erTxt=ps=>sum(ps,'reach')>=100?fmtPct(er(ps)):'—';
+  const subs=sum(tr,'follows');
+  // 1) мини-статистика
   let h=`<div class="tr-sum num">
-    <div><b>${tr.length}</b>${pl(tr.length)} ${per} · из ${cur.length} публикаций</div>
-    <div><b>${fmtN(sum(tr,'views'))}</b>просмотров · ${share('views')} от всех</div>
+    <div><b>${fmtN(sum(tr,'views'))}</b>просмотры · ${share('views')} от всех</div>
     <div><b>${fmtN(sum(tr,'reach'))}</b>охват · ${share('reach')} от всего</div>
-    <div><b>+${fmtN(sum(tr,'follows'))}</b>${plural(sum(tr,'follows'),'подписка','подписки','подписок')} · ER ${erTxt(tr)}</div>
+    <div><b>+${fmtN(subs)}</b>${pl(subs,'подписка','подписки','подписок')} · ${share('follows')} от всех</div>
+    <div><b>${tr.length}</b>${pl(tr.length,'ролик','ролика','роликов')} ${per} · из ${cur.length} публикаций</div>
   </div>`;
-  h+='<div class="tbl-wrap"><table class="cr num"><thead><tr><th class="l">ролик</th><th>охват</th><th>просмотры</th><th>подписки</th><th>переходы</th><th>ER</th><th class="l">вывод</th></tr></thead><tbody>'+
+  // 2) топ форматов подачи — по просмотрам
+  const g={}; tr.forEach(p=>{const k=creaKey(p.crea)||'без пометки';(g[k]=g[k]||[]).push(p);});
+  const fm=Object.entries(g).map(([k,ps])=>({k:k.charAt(0).toUpperCase()+k.slice(1),n:ps.length,views:sum(ps,'views'),follows:sum(ps,'follows')}))
+    .sort((a,b)=>b.views-a.views).slice(0,5);
+  const fmax=fm[0].views||1;
+  const fmtHtml=fm.map((f,i)=>`<div class="bar-row">
+      <div class="top"><span>${i+1}. ${esc(f.k)}</span><span class="num">${fmtN(f.views)}</span></div>
+      <div class="track"><div class="fill" style="width:${Math.max(f.views/fmax*100,1)}%"></div></div>
+      <div class="meta num">${f.n} ${pl(f.n,'ролик','ролика','роликов')} · +${fmtN(f.follows)} ${pl(f.follows,'подписка','подписки','подписок')} · ${fmtN(f.views/f.n)} просм. на ролик</div></div>`).join('');
+  // 3) топ-3 рилс — по просмотрам
+  const top=[...tr].sort((a,b)=>b.views-a.views).slice(0,3);
+  const topHtml=top.map((p,i)=>`<article class="post">
+      <div class="row1"><span class="rank">№ ${i+1}</span><span>${fmtDate(p.date)}</span></div>
+      <div class="topic">${esc(p.topic)}</div>
+      <div class="stats num">
+        <div><b>${fmtShort(p.views)}</b>просмотры</div>
+        <div><b>${fmtShort(p.reach)}</b>охват</div>
+        <div><b>+${fmtN(p.follows)}</b>подписки</div>
+        <div><b class="sm">${esc((creaKey(p.crea)||'—').replace(/^./,c=>c.toUpperCase()))}</b>подача</div>
+      </div></article>`).join('');
+  h+=`<div class="tr-grid"><div><h3>Топ форматов</h3><div class="tr-fmt">${fmtHtml}</div></div>
+      <div><h3>Топ-3 пробных рилс</h3><div class="tr-top">${topHtml}</div></div></div>`;
+  // 4) полный список — свернут
+  h+=`<details class="tr-all"><summary>Все пробные рилс ${per} (${tr.length})</summary><div class="tbl-wrap"><table class="cr num"><thead><tr><th class="l">ролик</th><th>охват</th><th>просмотры</th><th>подписки</th><th>переходы</th><th>ER</th><th class="l">вывод</th></tr></thead><tbody>`+
     [...tr].sort((a,b)=>b.views-a.views).map(p=>`<tr><td>${esc(p.topic)}<span class="n">${fmtDate(p.date)} · ${esc((p.crea||p.fmtRaw).replace(/[.…]+\s*$/,''))}</span></td>
       <td>${fmtN(p.reach)}</td><td>${fmtN(p.views)}</td><td>+${fmtN(p.follows)}</td><td>${fmtN(p.clicks)}</td><td title="${p.reach<100?'охват меньше 100 — ER не считаем':''}">${erTxt([p])}</td>
-      <td class="note">${esc(p.comment||p.note)}</td></tr>`).join('')+'</tbody></table></div>';
+      <td class="note">${esc(p.comment||p.note)}</td></tr>`).join('')+'</tbody></table></div></details>';
   el.innerHTML=h;
 }
 function renderCreative(cur){
